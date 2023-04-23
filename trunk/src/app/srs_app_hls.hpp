@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2021 The SRS Authors
+// Copyright (c) 2013-2023 The SRS Authors
 //
 // SPDX-License-Identifier: MIT or MulanPSL-2.0
 //
@@ -156,6 +156,11 @@ private:
     SrsHlsSegment* current;
     // The ts context, to keep cc continous between ts.
     SrsTsContext* context;
+private:
+    // Latest audio codec, parsed from stream.
+    SrsAudioCodecId latest_acodec_;
+    // Latest audio codec, parsed from stream.
+    SrsVideoCodecId latest_vcodec_;
 public:
     SrsHlsMuxer();
     virtual ~SrsHlsMuxer();
@@ -166,6 +171,11 @@ public:
     virtual std::string ts_url();
     virtual srs_utime_t duration();
     virtual int deviation();
+public:
+    SrsAudioCodecId latest_acodec();
+    void set_latest_acodec(SrsAudioCodecId v);
+    SrsVideoCodecId latest_vcodec();
+    void set_latest_vcodec(SrsVideoCodecId v);
 public:
     // Initialize the hls muxer.
     virtual srs_error_t initialize();

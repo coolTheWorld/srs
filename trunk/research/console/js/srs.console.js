@@ -578,6 +578,27 @@ scApp.filter('sc_filter_preview_url', ['$sc_server', function($sc_server){
     };
 }]);
 
+scApp.filter('sc_filter_streamURL', function(){
+    return function(v){
+        if (!v || !v.url) return '';
+
+        const pos = v.url.lastIndexOf('/');
+        const stream = pos < 0 ? '' : v.url.substr(pos);
+
+        // Use name or extract from url.
+        let streamName = v.name ? v.name : stream;
+        if (streamName && streamName.indexOf('/') !== 0) streamName = `/${streamName}`;
+
+        const pos2 = v.tcUrl.indexOf('?');
+        const tcUrl = pos2 < 0 ? v.tcUrl : v.tcUrl.substr(0, pos2);
+
+        let params = pos2 < 0 ? '' : v.tcUrl.substr(pos2);
+        if (params === '?vhost=__defaultVhost__' || params === '?domain=__defaultVhost__') params = '';
+
+        return `${tcUrl}${streamName}${params}`;
+    };
+});
+
 // the sc nav is the nevigator
 scApp.provider("$sc_nav", function(){
     this.$get = function(){

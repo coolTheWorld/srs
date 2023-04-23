@@ -1,14 +1,177 @@
+
+
 # Changelog
 
 The changelog for SRS.
 
-> Note: Please read **Wiki: Gettting Started( [EN](https://github.com/ossrs/srs/wiki/v4_EN_Home#getting-started) / [CN](https://github.com/ossrs/srs/wiki/v4_CN_Home#getting-started) )** first.
+<a name="v6-changes"></a>
+
+## SRS 6.0 Changelog
+
+* v6.0, 2023-04-08, Merge [#3495](https://github.com/ossrs/srs/pull/3495): RTMP: Support enhanced RTMP specification for HEVC. v6.0.42 (#3495)
+* v6.0, 2023-04-01, Merge [#3392](https://github.com/ossrs/srs/pull/3392): Support composited bridges for 1:N protocols converting. v6.0.41 (#3392)
+* v6.0, 2023-04-01, Merge [#3458](https://github.com/ossrs/srs/pull/3450): API: Support HTTP basic authentication for API. v6.0.40 (#3458)
+* v6.0, 2023-03-27, Merge [#3450](https://github.com/ossrs/srs/pull/3450): WebRTC: Error message carries the SDP when failed. v6.0.39 (#3450)
+* v6.0, 2023-03-25, Merge [#3477](https://github.com/ossrs/srs/pull/3477): Remove unnecessary NULL check in srs_freep. v6.0.38 (#3477)
+* v6.0, 2023-03-25, Merge [#3455](https://github.com/ossrs/srs/pull/3455): RTC: Call on_play before create session, for it might be freed for timeout. v6.0.37 (#3455)
+* v6.0, 2023-03-22, Merge [#3427](https://github.com/ossrs/srs/pull/3427): WHIP: Support DELETE resource for Larix Broadcaster. v6.0.36 (#3427)
+* v6.0, 2023-03-20, Merge [#3460](https://github.com/ossrs/srs/pull/3460): WebRTC: Support WHIP/WHEP players. v6.0.35 (#3460)
+* v6.0, 2023-03-07, Merge [#3441](https://github.com/ossrs/srs/pull/3441): HEVC: webrtc support hevc on safari. v6.0.34 (#3441)
+* v6.0, 2023-03-07, Merge [#3446](https://github.com/ossrs/srs/pull/3446): WebRTC: Warning if no ideal profile. v6.0.33 (#3446)
+* v6.0, 2023-03-06, Merge [#3445](https://github.com/ossrs/srs/pull/3445): Support configure for generic linux. v6.0.32 (#3445)
+* v6.0, 2023-03-04, Merge [#3105](https://github.com/ossrs/srs/pull/3105): Kickoff publisher when stream is idle, which means no players. v6.0.31 (#3105)
+* v6.0, 2023-02-25, Merge [#3438](https://github.com/ossrs/srs/pull/3438): Forward add question mark to the end. v6.0.30 (#3438)
+* v6.0, 2023-02-25, Merge [#3416](https://github.com/ossrs/srs/pull/3416): GB: Support HEVC for regression test and load tool for GB. v6.0.29 (#3416)
+* v6.0, 2023-02-25, Merge [#3424](https://github.com/ossrs/srs/pull/3424): API: Add service_id for http_hooks, which identify the process. v6.0.28 (#3424)
+* v6.0, 2023-02-22, Compatible with legacy RTMP URL. v6.0.27
+* v6.0, 2023-02-16, Merge [#3411](https://github.com/ossrs/srs/pull/3411): HEVC: Fix nalu vec duplicate when h265 vps/sps/pps demux. v6.0.26 (#3411)
+* v6.0, 2023-02-14, Merge [#3408](https://github.com/ossrs/srs/pull/3408): GB: Support H.265 for GB28181. v6.0.25 (#3408)
+* v6.0, 2023-02-12, Merge [#3409](https://github.com/ossrs/srs/pull/3409): SRT: Reduce latency to 200ms of srt2rtc.conf. v6.0.24 (#3409)
+* v6.0, 2023-02-08, Merge [#3391](https://github.com/ossrs/srs/pull/3391): Config: Error when both HLS and HTTP-TS enabled. v6.0.23 (#3391)
+* v6.0, 2023-02-08, Merge [#3389](https://github.com/ossrs/srs/pull/3389): Kernel: Fix demux SPS error for NVENC and LARIX. v6.0.22 (#3389)
+* v6.0, 2023-01-29, Merge [#3371](https://github.com/ossrs/srs/pull/3371): HLS: support kick-off hls client. v6.0.21 (#3371)
+* v6.0, 2023-01-19, Merge [#3366](https://github.com/ossrs/srs/pull/3366): H265: Support HEVC over SRT. v6.0.20 (#465) (#3366)
+* v6.0, 2023-01-19, Merge [#3318](https://github.com/ossrs/srs/pull/3318): RTC: fix rtc publisher pli cid. v6.0.19 (#3318)
+* v6.0, 2023-01-18, Merge [#3382](https://github.com/ossrs/srs/pull/3382): Rewrite research/api-server code by Go, remove Python. v6.0.18 (#3382)
+* v6.0, 2023-01-18, Merge [#3386](https://github.com/ossrs/srs/pull/3386): SRT: fix crash when srt_to_rtmp off. v6.0.17 (#3386)
+* v5.0, 2023-01-17, Merge [#3385](https://github.com/ossrs/srs/pull/3385): API: Support server/pid/service label for exporter and api. v6.0.16 (#3385)
+* v6.0, 2023-01-17, Merge [#3379](https://github.com/ossrs/srs/pull/3379): H265: Support demux vps/pps info. v6.0.15
+* v6.0, 2023-01-08, Merge [#3360](https://github.com/ossrs/srs/pull/3360): H265: Support DVR HEVC stream to MP4. v6.0.14
+* v6.0, 2023-01-06, Merge [#3363](https://github.com/ossrs/srs/issues/3363): HTTP: Add CORS Header for private network access. v6.0.13
+* v6.0, 2023-01-04, Merge [#3362](https://github.com/ossrs/srs/issues/3362): SRT: Upgrade libsrt from 1.4.1 to 1.5.1. v6.0.12
+* v6.0, 2023-01-02, For [#465](https://github.com/ossrs/srs/issues/465): HLS: Support HEVC over HLS. v6.0.11
+* v6.0, 2022-12-30, Support first SRS6 version. v6.0.10
+* v6.0, 2022-12-26, For [#465](https://github.com/ossrs/srs/issues/465): TS: Support disable audio or video to make mpegts.js happy. v6.0.9
+* v6.0, 2022-12-26, For [#465](https://github.com/ossrs/srs/issues/465): TS: Fix bug for codec detecting for HTTP-TS. v6.0.8
+* v6.0, 2022-12-25, For [#296](https://github.com/ossrs/srs/issues/296): Fix [#3338](https://github.com/ossrs/srs/issues/3338): MP3: Support play HTTP-MP3 by H5(srs-player). v6.0.7
+* v6.0, 2022-12-17, Merge 5.0: FLV header and SRT bugfix. v6.0.6
+* v6.0, 2022-12-04, Merge [#3271](https://github.com/ossrs/srs/pull/3271): H265: The codec information is incorrect. v6.0.5
+* v6.0, 2022-11-23, Merge [#3275](https://github.com/ossrs/srs/pull/3275): H265: Support HEVC over HTTP-TS. v6.0.4
+* v6.0, 2022-11-23, Merge [#3274](https://github.com/ossrs/srs/pull/3274): H265: Support parse multiple NALUs in a frame. v6.0.3
+* v6.0, 2022-11-22, Merge [#3272](https://github.com/ossrs/srs/pull/3272): H265: Support HEVC over RTMP or HTTP-FLV. v6.0.2
+* v6.0, 2022-11-22, Merge [#3268](https://github.com/ossrs/srs/pull/3268): H265: Update mpegts.js to play HEVC over HTTP-TS/FLV. v6.0.1
+* v6.0, 2022-11-22, Init SRS 6. v6.0.0
 
 <a name="v5-changes"></a>
 
 ## SRS 5.0 Changelog
 
-* v5.0, 2022-04-04, Support NGINX HLS Cluster, see [CN](https://github.com/ossrs/srs/wiki/v4_CN_SampleHlsCluster) or [EN](https://github.com/ossrs/srs/wiki/v4_EN_SampleHlsCluster). v5.0.28
+* v5.0, 2023-04-01, Merge [#3458](https://github.com/ossrs/srs/pull/3450): API: Support HTTP basic authentication for API. v5.0.152 (#3458)
+* v5.0, 2023-03-27, Merge [#3450](https://github.com/ossrs/srs/pull/3450): WebRTC: Error message carries the SDP when failed. v5.0.151 (#3450)
+* v5.0, 2023-03-25, Merge [#3477](https://github.com/ossrs/srs/pull/3477): Remove unneccessary NULL check in srs_freep. v5.0.150 (#3477)
+* v5.0, 2023-03-25, Merge [#3455](https://github.com/ossrs/srs/pull/3455): RTC: Call on_play before create session, for it might be freed for timeout. v5.0.149 (#3455)
+* v5.0, 2023-03-22, Merge [#3427](https://github.com/ossrs/srs/pull/3427): WHIP: Support DELETE resource for Larix Broadcaster. v5.0.148 (#3427)
+* v5.0, 2023-03-20, Merge [#3460](https://github.com/ossrs/srs/pull/3460): WebRTC: Support WHIP/WHEP players. v5.0.147 (#3460)
+* v5.0, 2023-03-07, Merge [#3446](https://github.com/ossrs/srs/pull/3446): WebRTC: Warning if no ideal profile. v5.0.146 (#3446)
+* v5.0, 2023-03-06, Merge [#3445](https://github.com/ossrs/srs/pull/3445): Support configure for generic linux. v5.0.145 (#3445)
+* v5.0, 2023-03-04, Merge [#3105](https://github.com/ossrs/srs/pull/3105): Kickoff publisher when stream is idle, which means no players. v5.0.144 (#3105)
+* v5.0, 2023-02-25, Merge [#3424](https://github.com/ossrs/srs/pull/3424): API: Add service_id for http_hooks, which identify the process. v5.0.143 (#3424)
+* v5.0, 2023-02-22, Compatible with legacy RTMP URL. v5.0.142
+* v5.0, 2023-02-12, Merge [#3409](https://github.com/ossrs/srs/pull/3409): SRT: Reduce latency to 200ms of srt2rtc.conf. v5.0.141 (#3409)
+* v5.0, 2023-02-08, Merge [#3391](https://github.com/ossrs/srs/pull/3391): Config: Error when both HLS and HTTP-TS enabled. v5.0.140 (#3391)
+* v5.0, 2023-01-29, Merge [#3371](https://github.com/ossrs/srs/pull/3371): HLS: support kick-off hls client. v5.0.139 (#3371)
+* v5.0, 2023-01-19, Merge [#3318](https://github.com/ossrs/srs/pull/3318): RTC: fix rtc publisher pli cid. v5.0.138 (#3318)
+* v5.0, 2023-01-18, Merge [#3382](https://github.com/ossrs/srs/pull/3382): Rewrite research/api-server code by Go, remove Python. v5.0.137 (#3382)
+* v5.0, 2023-01-18, Merge [#3386](https://github.com/ossrs/srs/pull/3386): SRT: fix crash when srt_to_rtmp off. v5.0.136 (#3386)
+* v5.0, 2023-01-17, Merge [#3385](https://github.com/ossrs/srs/pull/3385): API: Support server/pid/service label for exporter and api. v5.0.135 (#3385)
+* v5.0, 2023-01-17, Merge [#3383](https://github.com/ossrs/srs/pull/3383): GB: Fix PSM parsing indicator bug. v5.0.134 (#3383)
+* v5.0, 2023-01-08, Merge [#3308](https://github.com/ossrs/srs/pull/3308): DVR: Improve file write performance by fwrite with cache. v5.0.133
+* v5.0, 2023-01-06, DVR: Support blackbox test based on hooks. v5.0.132
+* v5.0, 2023-01-06, FFmpeg: Support build with FFmpeg native opus. v5.0.131 (#3140)
+* v5.0, 2023-01-05, CORS: Refine HTTP CORS headers. v5.0.130
+* v5.0, 2023-01-03, Add blackbox test for HLS and MP3 codec. v5.0.129
+* v5.0, 2023-01-02, Merge [#3355](https://github.com/ossrs/srs/pull/3355): Test: Support blackbox test by FFmpeg. v5.0.128
+* v5.0, 2023-01-02, Fix [#3347](https://github.com/ossrs/srs/issues/3347): Asan: Disable asan for CentOS and use statically link if possible. v5.0.127
+* v5.0, 2023-01-01, For [#296](https://github.com/ossrs/srs/issues/296): MP3: Upgrade mpegts.js to support HTTP-TS with mp3. v5.0.126
+* v5.0, 2023-01-01, For [#3349](https://github.com/ossrs/srs/issues/3349): API: Fix duplicated on_stop callback event bug. v5.0.125
+* v5.0, 2022-12-31, GB28181: Enable regression test for gb28181. v5.0.122
+* v5.0, 2022-12-31, Refine configure to guess OS automatically. v5.0.121
+* v5.0, 2022-12-31, Refine default config file for SRS. v5.0.120
+* v5.0, 2022-12-26, For [#939](https://github.com/ossrs/srs/issues/939): FLV: Fix bug for header flag gussing. v5.0.119
+* v5.0, 2022-12-26, For [#296](https://github.com/ossrs/srs/issues/296): MP3: Convert RTMP(MP3) to WebRTC(OPUS). v5.0.118
+* v5.0, 2022-12-25, For [#296](https://github.com/ossrs/srs/issues/296): MP3: Support dump stream information. v5.0.117
+* v5.0, 2022-12-25, For [#296](https://github.com/ossrs/srs/issues/296): MP3: Support mp3 for RTMP/HLS/HTTP-FLV/HTTP-TS/HLS etc. v5.0.116
+* v5.0, 2022-12-24, Fix [#3328](https://github.com/ossrs/srs/issues/3328): Docker: Avoiding duplicated copy files. v5.0.115
+* v5.0, 2022-12-20, Merge [#3321](https://github.com/ossrs/srs/pull/3321): GB: Refine lazy object GC. v5.0.114
+* v5.0, 2022-12-18, Merge [#3324](https://github.com/ossrs/srs/pull/3324): Asan: Support parse asan symbol backtrace log. v5.0.113
+* v5.0, 2022-12-17, Merge [#3323](https://github.com/ossrs/srs/pull/3323): SRT: Fix srt to rtmp crash when sps or pps empty. v5.0.112
+* v5.0, 2022-12-15, For [#3300](https://github.com/ossrs/srs/issues/3300): GB28181: Fix memory overlap for small packets. v5.0.111
+* v5.0, 2022-12-14, For [#939](https://github.com/ossrs/srs/issues/939): FLV: Support set default has_av and disable guessing. v5.0.110
+* v5.0, 2022-12-13, For [#939](https://github.com/ossrs/srs/issues/939): FLV: Drop packet if header flag is not matched. v5.0.109
+* v5.0, 2022-12-13, For [#939](https://github.com/ossrs/srs/issues/939): FLV: Reset has_audio or has_video if only sequence header.
+* v5.0, 2022-12-12, Merge [#3301](https://github.com/ossrs/srs/pull/3301): DASH: Fix dash crash bug when writing file. v5.0.108
+* v5.0, 2022-12-09, Merge [#3296](https://github.com/ossrs/srs/pull/3296): SRT: Support SRT to RTMP to WebRTC. v5.0.107
+* v5.0, 2022-12-08, Merge [#3295](https://github.com/ossrs/srs/pull/3295): API: Parse fragment of URI. v5.0.106
+* v5.0, 2022-12-04, Cygwin: Enable gb28181 for Windows. v5.0.105
+* v5.0, 2022-12-04, Asan: Set asan loging callback. v5.0.104
+* v5.0, 2022-12-02, GB28181: Enable GB for CentOS 7 package. v5.0.103
+* v5.0, 2022-12-02, Package script support extra options. v5.0.102
+* v5.0, 2022-12-02, Disable CLS and APM by default. v5.0.101
+* v5.0, 2022-12-01, Config: Add utest for configuring with ENV variables. v5.0.100
+* v5.0, 2022-12-01, Live: Fix bug for gop cache limits. v5.0.99
+* v5.0, 2022-11-25, SRT: Support transform tlpkdrop to tlpktdrop. 5.0.98
+* v5.0, 2022-11-25, Config: Add ENV tips for config. 5.0.97
+* v5.0, 2022-11-24, For [#299](https://github.com/ossrs/srs/issues/299), DASH: Fix number mode bug to make it run. 5.0.96
+* v5.0, 2022-11-23, For [#3176](https://github.com/ossrs/srs/pull/3176): GB28181: Error and logging for HEVC. v5.0.95
+* v5.0, 2022-11-22, Merge [#3236](https://github.com/ossrs/srs/pull/3236): Live: Limit cached max frames by gop_cache_max_frames. v5.0.93
+* v5.0, 2022-11-22, Asan: Check libasan and show tips. v5.0.92
+* v5.0, 2022-11-21, Merge [#3264](https://github.com/ossrs/srs/pull/3264): Asan: Try to fix st_memory_leak for asan check. (#3264). v5.0.91
+* v5.0, 2022-11-21, Asan: Fix global ip address leak check. v5.0.90
+* v5.0, 2022-11-20, For [#2532](https://github.com/ossrs/srs/issues/2532): Windows: Support cygwin pipline and packager. v5.0.89
+* v5.0, 2022-11-18, Fix [#3215](https://github.com/ossrs/srs/issues/3215): Callback: Fix bug for response string 0. v5.0.88
+* v5.0, 2022-11-18, For [#2532](https://github.com/ossrs/srs/issues/2532): Windows: Replace ln by cp for windows. v5.0.87
+* v5.0, 2022-10-31, For [#2899](https://github.com/ossrs/srs/issues/2899): Exporter: Add metrics cpu, memory and uname. v5.0.86
+* v5.0, 2022-10-30, Config: Support startting with environment variable only. v5.0.85
+* v5.0, 2022-10-26, Fix [#3218](https://github.com/ossrs/srs/issues/3218): Log: Follow Java/log4j log level specs. v5.0.83
+* v5.0, 2022-10-25, Log: Refine the log interface. v5.0.82
+* v5.0, 2022-10-23, For [#3216](https://github.com/ossrs/srs/issues/3216): Support Google Address Sanitizer. v5.0.81
+* v5.0, 2022-10-21, Kernel: Support grab backtrace stack when assert fail. v5.0.80
+* v5.0, 2022-10-21, ST: Refine tools and CMakeLists.txt. Add backtrace example. v5.0.79
+* v5.0, 2022-10-10, For [#2901](https://github.com/ossrs/srs/issues/2901): Edge: Fast disconnect and reconnect. v5.0.78
+* v5.0, 2022-10-09, Fix [#3198](https://github.com/ossrs/srs/issues/3198): SRT: Support PUSH SRT by IP and optional port. v5.0.76
+* v5.0, 2022-10-06, GB28181: Support GB28181-2016 protocol. v5.0.74
+* v5.0, 2022-10-05, HTTP: Skip body and left message by upgrade. v5.0.73
+* v5.0, 2022-10-02, ST: Support set context id while thread running. v5.0.72
+* v5.0, 2022-09-30, RTC: Refine SDP to support GB28181 SSRC spec. v5.0.71
+* v5.0, 2022-09-30, GB28181: Refine HTTP parser to support SIP. v5.0.70
+* v5.0, 2022-09-30, Kernel: Support lazy sweeping simple GC. v5.0.69
+* v5.0, 2022-09-30, HTTP: Support HTTP header in creating order. v5.0.68
+* v5.0, 2022-09-27, For [#2899](https://github.com/ossrs/srs/issues/2899): Exporter: Support exporter for Prometheus. v5.0.67
+* v5.0, 2022-09-27, For [#3167](https://github.com/ossrs/srs/issues/3167): WebRTC: Refine sequence jitter algorithm. v5.0.66
+* v5.0, 2022-09-22, Fix [#3164](https://github.com/ossrs/srs/issues/3164): SRT: Choppy when audio ts gap is too large. v5.0.65
+* v5.0, 2022-09-16, APM: Support distributed tracing by Tencent Cloud APM. v5.0.64
+* v5.0, 2022-09-16, For [#3179](https://github.com/ossrs/srs/issues/3179): WebRTC: Make sure the same m-lines order for offer and answer. v5.0.63
+* v5.0, 2022-09-10, For [#3174](https://github.com/ossrs/srs/issues/3174): WebRTC: Support Unity to publish or play stream. v5.0.62
+* v5.0, 2022-09-06, Fix [#3170](https://github.com/ossrs/srs/issues/3170): WebRTC: Support WHIP(WebRTC-HTTP ingestion protocol). v5.0.61
+* v5.0, 2022-09-04, Fix [#2852](https://github.com/ossrs/srs/issues/2852): WebRTC: WebRTC over TCP directly, not TURN. v5.0.60
+* v5.0, 2022-09-01, Fix [#1405](https://github.com/ossrs/srs/issues/1405): Restore the stream when parsing failed. v5.0.59
+* v5.0, 2022-09-01, Fix [#1405](https://github.com/ossrs/srs/issues/1405): Support guessing IBMF first. v5.0.58
+* v5.0, 2022-09-01, ST: Define and use a new jmpbuf. v5.0.57
+* v5.0, 2022-08-31, Fix URL parsing bug for `__defaultVhost__`. v5.0.56
+* v5.0, 2022-08-30, Fix [#2837](https://github.com/ossrs/srs/issues/2837): Callback: Support stream_url and stream_id. v5.0.55
+* v5.0, 2022-08-30, STAT: Refine tcUrl for SRT/RTC. v5.0.54
+* v5.0, 2022-08-30, Refactor: Extract SrsNetworkKbps from SrsKbps. v5.0.53
+* v5.0, 2022-08-30, Remove bandwidth check because falsh is disabled. v5.0.52
+* v5.0, 2022-08-30, Refactor: Use compositor for ISrsKbpsDelta. v5.0.51
+* v5.0, 2022-08-29, RTC: Stat the WebRTC clients bandwidth. v5.0.50
+* v5.0, 2022-08-29, HLS: Stat the HLS streaming clients bandwidth. v5.0.49
+* v5.0, 2022-08-28, URL: Use SrsHttpUri to parse URL and query. v5.0.48
+* v5.0, 2022-08-28, Fix [#2881](https://github.com/ossrs/srs/issues/2881): HTTP: Support merging api to server. v5.0.47
+* v5.0, 2022-08-27, Fix [#3108](https://github.com/ossrs/srs/issues/3108): STAT: Update stat for SRT. v5.0.46
+* v5.0, 2022-08-26, Log: Stat the number of logs. v5.0.45
+* v5.0, 2022-08-24, Log: Support write log to tencentcloud CLS. v5.0.44
+* v5.0, 2022-08-22, Fix [#3114](https://github.com/ossrs/srs/issues/3114): Origin cluster config bug. v5.0.43
+* v5.0, 2022-08-19, For [#2136](https://github.com/ossrs/srs/issues/2136): API: Cleanup no active streams for statistics. v5.0.42
+* v5.0, 2022-08-14, Fix [#2747](https://github.com/ossrs/srs/issues/2747): Support Apple Silicon M1(aarch64). v5.0.41
+* v5.0, 2022-08-12, Support crossbuild for hisiv500. v5.0.40
+* v5.0, 2022-08-10, Build: Detect OS by packager. v5.0.39
+* v5.0, 2022-08-06, Support MIPS 64bits for loongson 3A4000/3B3000. v5.0.38
+* v5.0, 2022-07-20, Fix [#3115](https://github.com/ossrs/srs/pull/3115): ST: Support RISCV cpu. v5.0.33
+* v5.0, 2022-06-29, Support multiple threads by thread pool. v5.0.32
+* v5.0, 2022-06-28, ST: Support thread-local for multiple threads. v5.0.31
+* v5.0, 2022-06-17, Merge [#3010](https://github.com/ossrs/srs/pull/3010): SRT: Support Coroutine Native SRT over ST. (#3010). v5.0.30
+* v5.0, 2022-06-15, For [#3058](https://github.com/ossrs/srs/pull/3058): Docker: Support x86_64, armv7 and aarch64 docker image (#3058). v5.0.29
+* v5.0, 2022-04-04, Support NGINX HLS Cluster, see [CN](https://ossrs.net/lts/zh-cn/docs/v4/doc/sample-hls-cluster) or [EN](https://ossrs.io/lts/en-us/docs/v4/doc/sample-hls-cluster). v5.0.28
 * v5.0, 2022-03-30, Support DigitalOcean [Droplet SRS 1-Click](https://cloud.digitalocean.com/droplets/new?appId=104916642&size=s-1vcpu-1gb&region=sgp1&image=ossrs-srs&type=applications). v5.0.27
 * v5.0, 2022-03-12, Merge [#2943](https://github.com/ossrs/srs/pull/2943): SRT: Fix typo in libsrt build options. v5.0.26
 * v5.0, 2022-03-09, Merge SRS 4.0 for bugfix. v5.0.25
@@ -38,10 +201,29 @@ The changelog for SRS.
 
 ## SRS 4.0 Changelog
 
+* v4.0, 2022-12-24, For [#296](https://github.com/ossrs/srs/issues/296): MP3: Fix bug for TS or HLS with mp3 codec. v4.0.269
+* v4.0, 2022-11-22, Pick [#3079](https://github.com/ossrs/srs/issues/3079): WebRTC: Fix no audio and video issue for Firefox. v4.0.268
+* v4.0, 2022-10-10, For [#2901](https://github.com/ossrs/srs/issues/2901): Edge: Fast disconnect and reconnect. v4.0.267
+* v4.0, 2022-09-27, For [#3167](https://github.com/ossrs/srs/issues/3167): WebRTC: Refine sequence jitter algorithm. v4.0.266
+* v4.0, 2022-09-16, For [#3179](https://github.com/ossrs/srs/issues/3179): WebRTC: Make sure the same m-lines order for offer and answer. v4.0.265
+* v4.0, 2022-09-09, For [#3174](https://github.com/ossrs/srs/issues/3174): WebRTC: Support Unity to publish or play stream. v4.0.264
+* v4.0, 2022-09-09, Fix [#3093](https://github.com/ossrs/srs/issues/3093): WebRTC: Ignore unknown fmtp for h.264. v4.0.263
+* v4.0, 2022-09-06, Fix [#3170](https://github.com/ossrs/srs/issues/3170): WebRTC: Support WHIP(WebRTC-HTTP ingestion protocol). v4.0.262
+* v4.0, 2022-09-03, Fix HTTP url parsing bug. v4.0.261
+* v4.0, 2022-09-03, For [#3167](https://github.com/ossrs/srs/issues/3167): WebRTC: Play stucked when republish. v4.0.260
+* v4.0, 2022-09-02, For [#307](https://github.com/ossrs/srs/issues/307): WebRTC: Support use domain name as CANDIDATE. v4.0.259
+* v4.0, 2022-08-29, Copy libxml2-dev for FFmpeg. v4.0.258
+* v4.0, 2022-08-24, STAT: Support config server_id and generate one if empty. v4.0.257
+* v4.0, 2022-08-24, For [#2136](https://github.com/ossrs/srs/issues/2136): API: Cleanup no active streams for statistics. v4.0.256
+* v4.0, 2022-08-17, RTMP URL supports domain in stream parameters. v4.0.255
+* v4.0, 2022-08-10, Fix server id generator bug. v4.0.254
+* v4.0, 2022-06-29, Update SRS image for r.ossrs.net. v4.0.253
+* v4.0, 2022-06-11, For [#3058](https://github.com/ossrs/srs/pull/3058): Docker: Support x86_64, armv7 and aarch64 docker image (#3058). v4.0.252
 * v4.0, 2022-03-19, For [#2893](https://github.com/ossrs/srs/pull/2893): SRT: Decouple publish with play url (#2893). v4.0.251
 * v4.0, 2022-03-19, Merge [#2908](https://github.com/ossrs/srs/pull/2908): SRT: url supports multiple QueryStrings (#2908). v4.0.250
 * v4.0, 2022-03-17, SRT: Support debug and run with CLion. v4.0.249
 * v4.0, 2022-03-15, Merge [#2966](https://github.com/ossrs/srs/pull/2966): Bugfix: Fix rtcp nack blp encode bug (#2966). v4.0.248
+* v4.0, 2022-03-11, Merge [#2914](https://github.com/ossrs/srs/pull/2914): Security: Enable CIDR for allow/deny play/publish.
 * v4.0, 2022-03-07, RTC: Identify the WebRTC publisher in param for hooks. v4.0.247
 * v4.0, 2022-03-07, SRT: Append vhost to stream, not app. v4.0.246
 * v4.0, 2022-02-15, Fix warnings for uuid. v4.0.245
@@ -60,7 +242,6 @@ The changelog for SRS.
 * v4.0, 2022-01-21, Support docker image for [lighthouse](https://hub.docker.com/r/ossrs/lighthouse). v4.0.231
 * v4.0, 2022-01-17, Enable rtmp2rtc and rtc2rtmp for docker.conf
 * v4.0, 2022-01-17, Support docker image for [droplet](https://hub.docker.com/r/ossrs/droplet). v4.0.230
-* v4.0, 2022-01-16, Update README for **Cloud Virtual Machine([CN](https://github.com/ossrs/srs/wiki/v4_CN_Home#cloud-virtual-machine) / [EN](https://github.com/ossrs/srs/wiki/v4_EN_Home#cloud-virtual-machine))**
 * v4.0, 2022-01-13, Merge [#2872](https://github.com/ossrs/srs/pull/2872): RTC: fix play rtc judge for config rtc2rtmp on. (#2872). v4.0.229
 * v4.0, 2022-01-13, Support configure with --config as default config file. v4.0.227
 * v4.0, 2022-01-13, For [#2880](https://github.com/ossrs/srs/pull/2880): Add SrsAutoFreeH to release ptr with hooks. (#2880). v4.0.226
@@ -140,7 +321,7 @@ The changelog for SRS.
 * v4.0, 2021-07-24, Merge [#2483](https://github.com/ossrs/srs/pull/2483), RTC: Support statistic for HTTP-API, HTTP-Callback and Security. 4.0.144
 * v4.0, 2021-07-21, Merge [#2474](https://github.com/ossrs/srs/pull/2474), SRT: Use thread-safe log for multiple-threading SRT module. 4.0.143
 * v4.0, 2021-07-17, Fix bugs and enhance code. 4.0.142
-* v4.0, 2021-07-16, Support [CLion and cmake](https://github.com/ossrs/srs/wiki/v4_CN_IDE#clion) to build and debug SRS. 4.0.141
+* v4.0, 2021-07-16, Support [CLion and cmake](https://ossrs.net/lts/zh-cn/docs/v4/doc/ide#clion) to build and debug SRS. 4.0.141
 * v4.0, 2021-07-08, For [#2403](https://github.com/ossrs/srs/issues/2403), fix padding packets for RTMP2RTC. 4.0.140
 * v4.0, 2021-07-04, For [#2424](https://github.com/ossrs/srs/issues/2424), use srandom/random to generate. 4.0.139
 * v4.0, 2021-07-01, Merge [#2452](https://github.com/ossrs/srs/pull/2452), fix FFmpeg bug by updating channel_layout. 4.0.138
@@ -362,9 +543,9 @@ The changelog for SRS.
 * v3.0, 2019-12-25, For [#1537](https://github.com/ossrs/srs/issues/1537), remove cross-build, not used patches, directly build st.
 * v3.0, 2019-12-24, For [#1508](https://github.com/ossrs/srs/issues/1508), support chunk length and content in multiple parts.
 * v3.0, 2019-12-23, Merge SRS2 for running srs-librtmp on Windows. 3.0.80
-* v3.0, 2019-12-23, For [#1535](https://github.com/ossrs/srs/issues/1535), deprecate Adobe FMS/AMS edge token traversing([CN](https://github.com/ossrs/srs/wiki/v4_CN_DRM#tokentraverse), [EN](https://github.com/ossrs/srs/wiki/v4_EN_DRM#tokentraverse)) authentication. 3.0.79
+* v3.0, 2019-12-23, For [#1535](https://github.com/ossrs/srs/issues/1535), deprecate Adobe FMS/AMS edge token traversing([CN](https://ossrs.net/lts/zh-cn/docs/v4/doc/drm#tokentraverse), [EN](https://ossrs.io/lts/en-us/docs/v4/doc/drm#tokentraverse)) authentication. 3.0.79
 * v3.0, 2019-12-23, For [#1535](https://github.com/ossrs/srs/issues/1535), deprecate BWT(bandwidth testing). 3.0.78
-* v3.0, 2019-12-23, For [#1535](https://github.com/ossrs/srs/issues/1535), deprecate Adobe HDS(f4m)([CN](https://github.com/ossrs/srs/wiki/v4_CN_DeliveryHDS), [EN](https://github.com/ossrs/srs/wiki/v4_EN_DeliveryHDS)). 3.0.77
+* v3.0, 2019-12-23, For [#1535](https://github.com/ossrs/srs/issues/1535), deprecate Adobe HDS(f4m)([CN](https://ossrs.net/lts/zh-cn/docs/v4/doc/delivery-hds), [EN](https://ossrs.io/lts/en-us/docs/v4/doc/delivery-hds)). 3.0.77
 * v3.0, 2019-12-20, Fix [#1508](https://github.com/ossrs/srs/issues/1508), http-client support read chunked response. 3.0.76
 * v3.0, 2019-12-20, For [#1508](https://github.com/ossrs/srs/issues/1508), refactor srs_is_digital, support all zeros.
 * <strong>v3.0, 2019-12-19, [3.0 alpha5(3.0.75)](https://github.com/ossrs/srs/releases/tag/v3.0-a5) released. 115362 lines.</strong>
@@ -675,7 +856,7 @@ The changelog for SRS.
 * v2.0, 2014-12-22, hotfix [#264](https://github.com/ossrs/srs/issues/264), ignore NALU when sequence header to make HLS happy. 2.0.76
 * v2.0, 2014-12-20, hotfix [#264](https://github.com/ossrs/srs/issues/264), support disconnect publish connect when hls error. 2.0.75
 * v2.0, 2014-12-12, fix [#257](https://github.com/ossrs/srs/issues/257), support 0.1s+ latency. 2.0.70
-* v2.0, 2014-12-08, update wiki for mr([EN](https://github.com/ossrs/srs/wiki/v4_EN_LowLatency#merged-read), [CN](https://github.com/ossrs/srs/wiki/v4_CN_LowLatency#merged-read)) and mw([EN](https://github.com/ossrs/srs/wiki/v4_EN_LowLatency#merged-write), [CN](https://github.com/ossrs/srs/wiki/v4_CN_LowLatency#merged-write)).
+* v2.0, 2014-12-08, update wiki for mr([EN](https://ossrs.io/lts/en-us/docs/v4/doc/low-latency#merged-read), [CN](https://ossrs.net/lts/zh-cn/docs/v4/doc/low-latency#merged-read)) and mw([EN](https://ossrs.io/lts/en-us/docs/v4/doc/low-latency#merged-write), [CN](https://ossrs.net/lts/zh-cn/docs/v4/doc/low-latency#merged-write)).
 * v2.0, 2014-12-07, fix [#251](https://github.com/ossrs/srs/issues/251), 10k+ clients, use queue cond wait and fast vector. 2.0.67
 * v2.0, 2014-12-05, fix [#251](https://github.com/ossrs/srs/issues/251), 9k+ clients, use fast cache for msgs queue. 2.0.57
 * v2.0, 2014-12-04, fix [#241](https://github.com/ossrs/srs/issues/241), add mw(merged-write) config. 2.0.53
@@ -761,8 +942,8 @@ The changelog for SRS.
 * v1.0, 2014-06-27, SRS online 30days with RTMP/HLS.
 * v1.0, 2014-06-25, fix [#108](https://github.com/ossrs/srs/issues/108), support config time jitter for encoder non-monotonical stream. 0.9.133
 * v1.0, 2014-06-23, support report summaries in heartbeat. 0.9.132
-* v1.0, 2014-06-22, performance refine, support [3k+](https://github.com/ossrs/srs/wiki/v4_CN_Performance#performancereport4k) connections(270kbps). 0.9.130
-* v1.0, 2014-06-21, support edge [token traverse](https://github.com/ossrs/srs/wiki/v4_CN_DRM#tokentraverse), fix [#104](https://github.com/ossrs/srs/issues/104). 0.9.129
+* v1.0, 2014-06-22, performance refine, support [3k+](https://ossrs.net/lts/zh-cn/docs/v4/doc/performance#performancereport4k) connections(270kbps). 0.9.130
+* v1.0, 2014-06-21, support edge [token traverse](https://ossrs.net/lts/zh-cn/docs/v4/doc/drm#tokentraverse), fix [#104](https://github.com/ossrs/srs/issues/104). 0.9.129
 * v1.0, 2014-06-19, add connections count to api summaries. 0.9.127
 * v1.0, 2014-06-19, add srs bytes and kbps to api summaries. 0.9.126
 * v1.0, 2014-06-18, add network bytes to api summaries. 0.9.125
@@ -804,11 +985,11 @@ The changelog for SRS.
 * v1.0, 2014-04-11, add speex1.2 to transcode flash encoder stream. 0.9.58
 * v1.0, 2014-04-10, support reload ingesters(add/remov/update). 0.9.57
 * <strong>v1.0, 2014-04-07, [1.0 mainline(0.9.55)](https://github.com/ossrs/srs/releases/tag/v0.9.1) released. 30000 lines.</strong>
-* v1.0, 2014-04-07, support [ingest](https://github.com/ossrs/srs/wiki/v4_CN_SampleIngest) file/stream/device.
-* v1.0, 2014-04-05, support [http api](https://github.com/ossrs/srs/wiki/v4_CN_HTTPApi) and [http server](https://github.com/ossrs/srs/wiki/v4_CN_HTTPServer).
+* v1.0, 2014-04-07, support [ingest](https://ossrs.net/lts/zh-cn/docs/v4/doc/sample-ingest) file/stream/device.
+* v1.0, 2014-04-05, support [http api](https://ossrs.net/lts/zh-cn/docs/v4/doc/http-api) and [http server](https://ossrs.net/lts/zh-cn/docs/v4/doc/http-server).
 * v1.0, 2014-04-03, implements http framework and api/v1/version.
 * v1.0, 2014-03-30, fix bug for st detecting epoll failed, force st to use epoll.
-* v1.0, 2014-03-29, add wiki [Performance for RaspberryPi](https://github.com/ossrs/srs/wiki/v4_CN_RaspberryPi).
+* v1.0, 2014-03-29, add wiki [Performance for RaspberryPi](https://ossrs.net/lts/zh-cn/docs/v4/doc/raspberrypi).
 * v1.0, 2014-03-29, add release binary package for raspberry-pi.
 * v1.0, 2014-03-26, support RTMP ATC for HLS/HDS to support backup(failover).
 * v1.0, 2014-03-23, support daemon, default start in daemon.
@@ -819,19 +1000,18 @@ The changelog for SRS.
 * v1.0, 2014-03-19, add vn/an for FFMPEG to drop video/audio for radio stream.
 * v1.0, 2014-03-19, refine handshake, client support complex handshake, add utest.
 * v1.0, 2014-03-16, fix bug on arm of st, the sp change from 20 to 8, for respberry-pi, @see [commit](https://github.com/ossrs/srs/commit/5a4373d4835758188b9a1f03005cea0b6ddc62aa)
-* v1.0, 2014-03-16, support ARM([debian armhf, v7cpu](https://github.com/ossrs/srs/wiki/v4_CN_SrsLinuxArm)) with rtmp/ssl/hls/librtmp.
+* v1.0, 2014-03-16, support ARM([debian armhf, v7cpu](https://ossrs.net/lts/zh-cn/docs/v4/doc/arm)) with rtmp/ssl/hls/librtmp.
 * v1.0, 2014-03-12, finish utest for amf0 codec.
 * v1.0, 2014-03-06, add gperftools for mem leak detect, mem/cpu profile.
 * v1.0, 2014-03-04, add gest framework for utest, build success.
 * v1.0, 2014-03-02, srs-librtmp, client publish/play library like librtmp.
 * v1.0, 2014-03-01, modularity, extract core/kernel/rtmp/app/main module.
 * v1.0, 2014-02-28, support arm build(SRS/ST), add ssl to 3rdparty package.
-* v1.0, 2014-02-28, add wiki [BuildArm](https://github.com/ossrs/srs/wiki/v4_CN_Build), [FFMPEG](https://github.com/ossrs/srs/wiki/v4_CN_FFMPEG), [Reload](https://github.com/ossrs/srs/wiki/v4_CN_Reload)
-* v1.0, 2014-02-27, add wiki [LowLatency](https://github.com/ossrs/srs/wiki/v4_CN_LowLatency), [HTTPCallback](https://github.com/ossrs/srs/wiki/v4_CN_HTTPCallback)
-* v1.0, 2014-01-19, add wiki [DeliveryHLS](https://github.com/ossrs/srs/wiki/v4_CN_DeliveryHLS)
-* v1.0, 2014-01-12, add wiki [HowToAskQuestion](https://github.com/ossrs/srs/wiki/v4_CN_HowToAskQuestion), [RtmpUrlVhost](https://github.com/ossrs/srs/wiki/v4_CN_RtmpUrlVhost)
+* v1.0, 2014-02-28, add wiki [BuildArm](https://ossrs.net/lts/zh-cn/docs/v4/doc/install), [FFMPEG](https://ossrs.net/lts/zh-cn/docs/v4/doc/ffmpeg), [Reload](https://ossrs.net/lts/zh-cn/docs/v4/doc/reload)
+* v1.0, 2014-02-27, add wiki [LowLatency](https://ossrs.net/lts/zh-cn/docs/v4/doc/low-latency), [HTTPCallback](https://ossrs.net/lts/zh-cn/docs/v4/doc/http-callback)
+* v1.0, 2014-01-19, add wiki [DeliveryHLS](https://ossrs.net/lts/zh-cn/docs/v4/doc/delivery-hls)
 * v1.0, 2014-01-11, fix jw/flower player pause bug, which send closeStream actually.
-* v1.0, 2014-01-05, add wiki [Build](https://github.com/ossrs/srs/wiki/v4_CN_Build), [Performance](https://github.com/ossrs/srs/wiki/v4_CN_Performance), [Forward](https://github.com/ossrs/srs/wiki/v4_CN_Forward)
+* v1.0, 2014-01-05, add wiki [Build](https://ossrs.net/lts/zh-cn/docs/v4/doc/install), [Performance](https://ossrs.net/lts/zh-cn/docs/v4/doc/performance), [Forward](https://ossrs.net/lts/zh-cn/docs/v4/doc/forward)
 * v1.0, 2014-01-01, change listen(512), chunk-size(60000), to improve performance.
 * v1.0, 2013-12-27, merge from wenjie, the bandwidth test feature.
 * <strong>v0.9, 2013-12-25, [v0.9](https://github.com/ossrs/srs/releases/tag/v0.9.0) released. 20926 lines.</strong>
@@ -849,7 +1029,7 @@ The changelog for SRS.
 * v0.9, 2013-12-14, refine the thread model for the retry threads.
 * v0.9, 2013-12-10, auto install depends tools/libs on centos/ubuntu.
 * <strong>v0.8, 2013-12-08, [v0.8](https://github.com/ossrs/srs/releases/tag/v0.8.0) released. 19186 lines.</strong>
-* v0.8, 2013-12-08, support [http hooks](https://github.com/ossrs/srs/wiki/v4_CN_HTTPCallback): on_connect/close/publish/unpublish/play/stop.
+* v0.8, 2013-12-08, support [http hooks](https://ossrs.net/lts/zh-cn/docs/v4/doc/http-callback): on_connect/close/publish/unpublish/play/stop.
 * v0.8, 2013-12-08, support multiple http hooks for a event.
 * v0.8, 2013-12-07, support http callback hooks, on_connect.
 * v0.8, 2013-12-07, support network based cli and json result, add CherryPy 3.2.4.

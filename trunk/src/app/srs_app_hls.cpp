@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2021 The SRS Authors
+// Copyright (c) 2013-2023 The SRS Authors
 //
 // SPDX-License-Identifier: MIT or MulanPSL-2.0
 //
@@ -20,11 +20,11 @@ using namespace std;
 #include <srs_kernel_error.hpp>
 #include <srs_kernel_codec.hpp>
 #include <srs_protocol_amf0.hpp>
-#include <srs_rtmp_stack.hpp>
+#include <srs_protocol_rtmp_stack.hpp>
 #include <srs_app_config.hpp>
 #include <srs_app_source.hpp>
 #include <srs_core_autofree.hpp>
-#include <srs_rtmp_stack.hpp>
+#include <srs_protocol_rtmp_stack.hpp>
 #include <srs_app_pithy_print.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_kernel_codec.hpp>
@@ -202,6 +202,8 @@ SrsHlsMuxer::SrsHlsMuxer()
     async = new SrsAsyncCallWorker();
     context = new SrsTsContext();
     segments = new SrsFragmentWindow();
+    latest_acodec_ = SrsAudioCodecIdForbidden;
+    latest_vcodec_ = SrsVideoCodecIdForbidden;
     
     memset(key, 0, 16);
     memset(iv, 0, 16);
@@ -261,6 +263,42 @@ int SrsHlsMuxer::deviation()
     }
     
     return deviation_ts;
+}
+
+SrsAudioCodecId SrsHlsMuxer::latest_acodec()
+{
+    // If current context writer exists, we query from it.
+    if (current && current->tscw) return current->tscw->acodec();
+
+    // Get the configured or updated config.
+    return latest_acodec_;
+}
+
+void SrsHlsMuxer::set_latest_acodec(SrsAudioCodecId v)
+{
+    // Refresh the codec in context writer for current segment.
+    if (current && current->tscw) current->tscw->set_acodec(v);
+
+    // Refresh the codec for future segments.
+    latest_acodec_ = v;
+}
+
+SrsVideoCodecId SrsHlsMuxer::latest_vcodec()
+{
+    // If current context writer exists, we query from it.
+    if (current && current->tscw) return current->tscw->vcodec();
+
+    // Get the configured or updated config.
+    return latest_vcodec_;
+}
+
+void SrsHlsMuxer::set_latest_vcodec(SrsVideoCodecId v)
+{
+    // Refresh the codec in context writer for current segment.
+    if (current && current->tscw) current->tscw->set_vcodec(v);
+
+    // Refresh the codec for future segments.
+    latest_vcodec_ = v;
 }
 
 srs_error_t SrsHlsMuxer::initialize()
@@ -371,6 +409,8 @@ srs_error_t SrsHlsMuxer::segment_open()
             srs_warn("hls: use aac for other codec=%s", default_acodec_str.c_str());
         }
     }
+    // Now that we know the latest audio codec in stream, use it.
+    if (latest_acodec_ != SrsAudioCodecIdForbidden) default_acodec = latest_acodec_;
     
     // load the default vcodec from config.
     SrsVideoCodecId default_vcodec = SrsVideoCodecIdAVC;
@@ -378,13 +418,17 @@ srs_error_t SrsHlsMuxer::segment_open()
         std::string default_vcodec_str = _srs_config->get_hls_vcodec(req->vhost);
         if (default_vcodec_str == "h264") {
             default_vcodec = SrsVideoCodecIdAVC;
+        } else if (default_vcodec_str == "h265") {
+            default_vcodec = SrsVideoCodecIdHEVC;
         } else if (default_vcodec_str == "vn") {
             default_vcodec = SrsVideoCodecIdDisabled;
         } else {
             srs_warn("hls: use h264 for other codec=%s", default_vcodec_str.c_str());
         }
     }
-    
+    // Now that we know the latest video codec in stream, use it.
+    if (latest_vcodec_ != SrsVideoCodecIdForbidden) default_vcodec = latest_vcodec_;
+
     // new segment.
     current = new SrsHlsSegment(context, default_acodec, default_vcodec, writer);
     current->sequence_no = _sequence_no++;
@@ -525,7 +569,7 @@ bool SrsHlsMuxer::is_segment_absolutely_overflow()
 
 bool SrsHlsMuxer::pure_audio()
 {
-    return current && current->tscw && current->tscw->video_codec() == SrsVideoCodecIdDisabled;
+    return current && current->tscw && current->tscw->vcodec() == SrsVideoCodecIdDisabled;
 }
 
 srs_error_t SrsHlsMuxer::flush_audio(SrsTsMessageCache* cache)
@@ -573,7 +617,7 @@ srs_error_t SrsHlsMuxer::flush_video(SrsTsMessageCache* cache)
     
     // update the duration of segment.
     current->append(cache->video->dts / 90);
-    
+
     if ((err = current->tscw->write_video(cache->video)) != srs_success) {
         return srs_error_wrap(err, "hls: write video");
     }
@@ -963,6 +1007,13 @@ srs_error_t SrsHlsController::on_sequence_header()
 srs_error_t SrsHlsController::write_audio(SrsAudioFrame* frame, int64_t pts)
 {
     srs_error_t err = srs_success;
+
+    // Refresh the codec ASAP.
+    if (muxer->latest_acodec() != frame->acodec()->id) {
+        srs_trace("HLS: Switch audio codec %d(%s) to %d(%s)", muxer->latest_acodec(), srs_audio_codec_id2str(muxer->latest_acodec()).c_str(),
+            frame->acodec()->id, srs_audio_codec_id2str(frame->acodec()->id).c_str());
+        muxer->set_latest_acodec(frame->acodec()->id);
+    }
     
     // write audio to cache.
     if ((err = tsmc->cache_audio(frame, pts)) != srs_success) {
@@ -1005,7 +1056,14 @@ srs_error_t SrsHlsController::write_audio(SrsAudioFrame* frame, int64_t pts)
 srs_error_t SrsHlsController::write_video(SrsVideoFrame* frame, int64_t dts)
 {
     srs_error_t err = srs_success;
-    
+
+    // Refresh the codec ASAP.
+    if (muxer->latest_vcodec() != frame->vcodec()->id) {
+        srs_trace("HLS: Switch video codec %d(%s) to %d(%s)", muxer->latest_acodec(), srs_video_codec_id2str(muxer->latest_vcodec()).c_str(),
+                  frame->vcodec()->id, srs_video_codec_id2str(frame->vcodec()->id).c_str());
+        muxer->set_latest_vcodec(frame->vcodec()->id);
+    }
+
     // write video to cache.
     if ((err = tsmc->cache_video(frame, dts)) != srs_success) {
         return srs_error_wrap(err, "hls: cache video");
@@ -1317,9 +1375,9 @@ srs_error_t SrsHls::on_video(SrsSharedPtrMessage* shared_video, SrsFormat* forma
     if (format->video->frame_type == SrsVideoAvcFrameTypeVideoInfoFrame) {
         return err;
     }
-    
+
     srs_assert(format->vcodec);
-    if (format->vcodec->id != SrsVideoCodecIdAVC) {
+    if (format->vcodec->id != SrsVideoCodecIdAVC && format->vcodec->id != SrsVideoCodecIdHEVC) {
         return err;
     }
     

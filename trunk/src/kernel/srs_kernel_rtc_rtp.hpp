@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2021 The SRS Authors
+// Copyright (c) 2013-2023 The SRS Authors
 //
 // SPDX-License-Identifier: MIT or MulanPSL-2.0
 //
@@ -50,9 +50,9 @@ uint8_t srs_rtp_fast_parse_pt(char* buf, int size);
 srs_error_t srs_rtp_fast_parse_twcc(char* buf, int size, uint8_t twcc_id, uint16_t& twcc_sn);
 
 // The "distance" between two uint16 number, for example:
-//      distance(prev_value=3, value=5) === (int16_t)(uint16_t)((uint16_t)3-(uint16_t)5) === -2
-//      distance(prev_value=3, value=65534) === (int16_t)(uint16_t)((uint16_t)3-(uint16_t)65534) === 5
-//      distance(prev_value=65532, value=65534) === (int16_t)(uint16_t)((uint16_t)65532-(uint16_t)65534) === -2
+//      distance(prev_value=3, value=5) is (int16_t)(uint16_t)((uint16_t)3-(uint16_t)5) is -2
+//      distance(prev_value=3, value=65534) is (int16_t)(uint16_t)((uint16_t)3-(uint16_t)65534) is 5
+//      distance(prev_value=65532, value=65534) is (int16_t)(uint16_t)((uint16_t)65532-(uint16_t)65534) is -2
 // For RTP sequence, it's only uint16 and may flip back, so 3 maybe 3+0xffff.
 // @remark Note that srs_rtp_seq_distance(0, 32768)>0 is TRUE by https://mp.weixin.qq.com/s/JZTInmlB9FUWXBQw_7NYqg
 //      but for WebRTC jitter buffer it's FALSE and we follow it.
@@ -60,6 +60,10 @@ srs_error_t srs_rtp_fast_parse_twcc(char* buf, int size, uint8_t twcc_id, uint16
 inline int16_t srs_rtp_seq_distance(const uint16_t& prev_value, const uint16_t& value)
 {
     return (int16_t)(value - prev_value);
+}
+inline int32_t srs_rtp_ts_distance(const uint32_t& prev_value, const uint32_t& value)
+{
+    return (int32_t)(value - prev_value);
 }
 
 // For map to compare the sequence of RTP.
@@ -286,7 +290,7 @@ private:
 public:
     // The first byte as nalu type, for video decoder only.
     SrsAvcNaluType nalu_type;
-    // The frame type, for RTMP bridger or SFU source.
+    // The frame type, for RTMP bridge or SFU source.
     SrsFrameType frame_type;
 // Fast cache for performance.
 private:

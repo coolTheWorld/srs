@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2021 The SRS Authors
+// Copyright (c) 2013-2023 The SRS Authors
 //
 // SPDX-License-Identifier: MIT or MulanPSL-2.0
 //
@@ -9,19 +9,19 @@ using namespace std;
 
 #include <srs_kernel_error.hpp>
 #include <srs_app_listener.hpp>
-#include <srs_service_st.hpp>
-#include <srs_service_utility.hpp>
+#include <srs_protocol_st.hpp>
+#include <srs_protocol_utility.hpp>
 
-#include <srs_service_st.hpp>
-#include <srs_service_http_conn.hpp>
-#include <srs_rtmp_stack.hpp>
+#include <srs_protocol_st.hpp>
+#include <srs_protocol_http_conn.hpp>
+#include <srs_protocol_rtmp_stack.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_utest_protocol.hpp>
 #include <srs_utest_http.hpp>
-#include <srs_service_utility.hpp>
-#include <srs_service_http_client.hpp>
-#include <srs_service_rtmp_conn.hpp>
-#include <srs_service_conn.hpp>
+#include <srs_protocol_utility.hpp>
+#include <srs_protocol_http_client.hpp>
+#include <srs_protocol_rtmp_conn.hpp>
+#include <srs_protocol_conn.hpp>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <st.h>
@@ -76,7 +76,7 @@ public:
         srs_close_stfd(fd);
 	}
 public:
-    virtual srs_error_t on_tcp_client(srs_netfd_t stfd) {
+    virtual srs_error_t on_tcp_client(ISrsListener* listener, srs_netfd_t stfd) {
         fd = stfd;
         return srs_success;
 	}
@@ -87,15 +87,17 @@ VOID TEST(TCPServerTest, PingPong)
 	srs_error_t err;
 	if (true) {
 		MockTcpHandler h;
-		SrsTcpListener l(&h, _srs_tmp_host, _srs_tmp_port);
+		SrsTcpListener l(&h);
+        l.set_endpoint(_srs_tmp_host, _srs_tmp_port);
 
 		HELPER_EXPECT_SUCCESS(l.listen());
-		EXPECT_TRUE(l.fd() > 0);
+		EXPECT_TRUE(srs_netfd_fileno(l.lfd) > 0);
 	}
 
 	if (true) {
 		MockTcpHandler h;
-		SrsTcpListener l(&h, _srs_tmp_host, _srs_tmp_port);
+        SrsTcpListener l(&h);
+        l.set_endpoint(_srs_tmp_host, _srs_tmp_port);
 		HELPER_EXPECT_SUCCESS(l.listen());
 
 		SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
@@ -107,18 +109,18 @@ VOID TEST(TCPServerTest, PingPong)
 
 	if (true) {
 		MockTcpHandler h;
-		SrsTcpListener l(&h, _srs_tmp_host, _srs_tmp_port);
+        SrsTcpListener l(&h);
+        l.set_endpoint(_srs_tmp_host, _srs_tmp_port);
 		HELPER_EXPECT_SUCCESS(l.listen());
 
 		SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
 		HELPER_EXPECT_SUCCESS(c.connect());
 
-		SrsStSocket skt;
 		srs_usleep(30 * SRS_UTIME_MILLISECONDS);
 #ifdef SRS_OSX
 		ASSERT_TRUE(h.fd != NULL);
 #endif
-		HELPER_EXPECT_SUCCESS(skt.initialize(h.fd));
+        SrsStSocket skt(h.fd);
 
 		HELPER_EXPECT_SUCCESS(c.write((void*)"Hello", 5, NULL));
 
@@ -129,18 +131,18 @@ VOID TEST(TCPServerTest, PingPong)
 
 	if (true) {
 		MockTcpHandler h;
-		SrsTcpListener l(&h, _srs_tmp_host, _srs_tmp_port);
+        SrsTcpListener l(&h);
+        l.set_endpoint(_srs_tmp_host, _srs_tmp_port);
 		HELPER_EXPECT_SUCCESS(l.listen());
 
 		SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
 		HELPER_EXPECT_SUCCESS(c.connect());
 
-		SrsStSocket skt;
 		srs_usleep(30 * SRS_UTIME_MILLISECONDS);
 #ifdef SRS_OSX
 		ASSERT_TRUE(h.fd != NULL);
 #endif
-		HELPER_EXPECT_SUCCESS(skt.initialize(h.fd));
+        SrsStSocket skt(h.fd);
 
 		HELPER_EXPECT_SUCCESS(c.write((void*)"Hello", 5, NULL));
 		HELPER_EXPECT_SUCCESS(c.write((void*)" ", 1, NULL));
@@ -153,18 +155,18 @@ VOID TEST(TCPServerTest, PingPong)
 
 	if (true) {
 		MockTcpHandler h;
-		SrsTcpListener l(&h, _srs_tmp_host, _srs_tmp_port);
+        SrsTcpListener l(&h);
+        l.set_endpoint(_srs_tmp_host, _srs_tmp_port);
 		HELPER_EXPECT_SUCCESS(l.listen());
 
 		SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
 		HELPER_EXPECT_SUCCESS(c.connect());
 
-		SrsStSocket skt;
 		srs_usleep(30 * SRS_UTIME_MILLISECONDS);
 #ifdef SRS_OSX
 		ASSERT_TRUE(h.fd != NULL);
 #endif
-		HELPER_EXPECT_SUCCESS(skt.initialize(h.fd));
+        SrsStSocket skt(h.fd);
 
 		HELPER_EXPECT_SUCCESS(c.write((void*)"Hello SRS", 9, NULL));
 		EXPECT_EQ(9, c.get_send_bytes());
@@ -188,18 +190,18 @@ VOID TEST(TCPServerTest, PingPongWithTimeout)
 
 	if (true) {
 		MockTcpHandler h;
-		SrsTcpListener l(&h, _srs_tmp_host, _srs_tmp_port);
+        SrsTcpListener l(&h);
+        l.set_endpoint(_srs_tmp_host, _srs_tmp_port);
 		HELPER_EXPECT_SUCCESS(l.listen());
 
 		SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
 		HELPER_EXPECT_SUCCESS(c.connect());
 
-		SrsStSocket skt;
 		srs_usleep(30 * SRS_UTIME_MILLISECONDS);
 #ifdef SRS_OSX
 		ASSERT_TRUE(h.fd != NULL);
 #endif
-		HELPER_EXPECT_SUCCESS(skt.initialize(h.fd));
+        SrsStSocket skt(h.fd);
 		skt.set_recv_timeout(1 * SRS_UTIME_MILLISECONDS);
 
 		char buf[16] = {0};
@@ -210,18 +212,18 @@ VOID TEST(TCPServerTest, PingPongWithTimeout)
 
 	if (true) {
 		MockTcpHandler h;
-		SrsTcpListener l(&h, _srs_tmp_host, _srs_tmp_port);
+        SrsTcpListener l(&h);
+        l.set_endpoint(_srs_tmp_host, _srs_tmp_port);
 		HELPER_EXPECT_SUCCESS(l.listen());
 
 		SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
 		HELPER_EXPECT_SUCCESS(c.connect());
 
-		SrsStSocket skt;
 		srs_usleep(30 * SRS_UTIME_MILLISECONDS);
 #ifdef SRS_OSX
 		ASSERT_TRUE(h.fd != NULL);
 #endif
-		HELPER_EXPECT_SUCCESS(skt.initialize(h.fd));
+        SrsStSocket skt(h.fd);
 		skt.set_recv_timeout(1 * SRS_UTIME_MILLISECONDS);
 
 		char buf[16] = {0};
@@ -232,18 +234,18 @@ VOID TEST(TCPServerTest, PingPongWithTimeout)
 
 	if (true) {
 		MockTcpHandler h;
-		SrsTcpListener l(&h, _srs_tmp_host, _srs_tmp_port);
+        SrsTcpListener l(&h);
+        l.set_endpoint(_srs_tmp_host, _srs_tmp_port);
 		HELPER_EXPECT_SUCCESS(l.listen());
 
 		SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
 		HELPER_EXPECT_SUCCESS(c.connect());
 
-		SrsStSocket skt;
 		srs_usleep(30 * SRS_UTIME_MILLISECONDS);
 #ifdef SRS_OSX
 		ASSERT_TRUE(h.fd != NULL);
 #endif
-		HELPER_EXPECT_SUCCESS(skt.initialize(h.fd));
+        SrsStSocket skt(h.fd);
 		skt.set_recv_timeout(1 * SRS_UTIME_MILLISECONDS);
 
 		HELPER_EXPECT_SUCCESS(c.write((void*)"Hello", 5, NULL));
@@ -412,18 +414,18 @@ VOID TEST(TCPServerTest, WritevIOVC)
 
 	if (true) {
 		MockTcpHandler h;
-		SrsTcpListener l(&h, _srs_tmp_host, _srs_tmp_port);
+        SrsTcpListener l(&h);
+        l.set_endpoint(_srs_tmp_host, _srs_tmp_port);
 		HELPER_EXPECT_SUCCESS(l.listen());
 
 		SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
 		HELPER_EXPECT_SUCCESS(c.connect());
 
-		SrsStSocket skt;
 		srs_usleep(30 * SRS_UTIME_MILLISECONDS);
 #ifdef SRS_OSX
 		ASSERT_TRUE(h.fd != NULL);
 #endif
-		HELPER_EXPECT_SUCCESS(skt.initialize(h.fd));
+        SrsStSocket skt(h.fd);
 
 		iovec iovs[3];
 		iovs[0].iov_base = (void*)"H";
@@ -442,18 +444,18 @@ VOID TEST(TCPServerTest, WritevIOVC)
 
 	if (true) {
 		MockTcpHandler h;
-		SrsTcpListener l(&h, _srs_tmp_host, _srs_tmp_port);
+        SrsTcpListener l(&h);
+        l.set_endpoint(_srs_tmp_host, _srs_tmp_port);
 		HELPER_EXPECT_SUCCESS(l.listen());
 
 		SrsTcpClient c(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);
 		HELPER_EXPECT_SUCCESS(c.connect());
 
-		SrsStSocket skt;
 		srs_usleep(30 * SRS_UTIME_MILLISECONDS);
 #ifdef SRS_OSX
 		ASSERT_TRUE(h.fd != NULL);
 #endif
-		HELPER_EXPECT_SUCCESS(skt.initialize(h.fd));
+        SrsStSocket skt(h.fd);
 
 		iovec iovs[3];
 		iovs[0].iov_base = (void*)"H";
@@ -514,12 +516,12 @@ VOID TEST(HTTPServerTest, MessageConnection)
 
 	if (true) {
 	    SrsHttpMessage m;
-	    m.set_basic(HTTP_REQUEST, 100, 0, 0); EXPECT_STREQ("OTHER", m.method_str().c_str());
-	    m.set_basic(HTTP_REQUEST, SRS_CONSTS_HTTP_GET, 0, 0); EXPECT_EQ(SRS_CONSTS_HTTP_GET, m.method()); EXPECT_STREQ("GET", m.method_str().c_str());
-	    m.set_basic(HTTP_REQUEST, SRS_CONSTS_HTTP_PUT, 0, 0); EXPECT_EQ(SRS_CONSTS_HTTP_PUT, m.method()); EXPECT_STREQ("PUT", m.method_str().c_str());
-	    m.set_basic(HTTP_REQUEST, SRS_CONSTS_HTTP_POST, 0, 0); EXPECT_EQ(SRS_CONSTS_HTTP_POST, m.method()); EXPECT_STREQ("POST", m.method_str().c_str());
-	    m.set_basic(HTTP_REQUEST, SRS_CONSTS_HTTP_DELETE, 0, 0); EXPECT_EQ(SRS_CONSTS_HTTP_DELETE, m.method()); EXPECT_STREQ("DELETE", m.method_str().c_str());
-	    m.set_basic(HTTP_REQUEST, SRS_CONSTS_HTTP_OPTIONS, 0, 0); EXPECT_EQ(SRS_CONSTS_HTTP_OPTIONS, m.method()); EXPECT_STREQ("OPTIONS", m.method_str().c_str());
+	    m.set_basic(HTTP_REQUEST, (http_method)100, (http_status)0, 0); EXPECT_STREQ("<unknown>", m.method_str().c_str());
+	    m.set_basic(HTTP_REQUEST, SRS_CONSTS_HTTP_GET, (http_status)0, 0); EXPECT_EQ(SRS_CONSTS_HTTP_GET, m.method()); EXPECT_STREQ("GET", m.method_str().c_str());
+	    m.set_basic(HTTP_REQUEST, SRS_CONSTS_HTTP_PUT, (http_status)0, 0); EXPECT_EQ(SRS_CONSTS_HTTP_PUT, m.method()); EXPECT_STREQ("PUT", m.method_str().c_str());
+	    m.set_basic(HTTP_REQUEST, SRS_CONSTS_HTTP_POST, (http_status)0, 0); EXPECT_EQ(SRS_CONSTS_HTTP_POST, m.method()); EXPECT_STREQ("POST", m.method_str().c_str());
+	    m.set_basic(HTTP_REQUEST, SRS_CONSTS_HTTP_DELETE, (http_status)0, 0); EXPECT_EQ(SRS_CONSTS_HTTP_DELETE, m.method()); EXPECT_STREQ("DELETE", m.method_str().c_str());
+	    m.set_basic(HTTP_REQUEST, SRS_CONSTS_HTTP_OPTIONS, (http_status)0, 0); EXPECT_EQ(SRS_CONSTS_HTTP_OPTIONS, m.method()); EXPECT_STREQ("OPTIONS", m.method_str().c_str());
 	}
 
 	if (true) {
@@ -533,11 +535,29 @@ VOID TEST(HTTPServerTest, MessageConnection)
 	    EXPECT_STREQ("http://127.0.0.1/live/livestream.flv", m.uri().c_str()); EXPECT_FALSE(m.is_jsonp());
 	}
 
-	if (true) {
-	    SrsHttpMessage m;
-	    HELPER_EXPECT_SUCCESS(m.set_url("http://127.0.0.1/live/livestream.flv?domain=ossrs.net", false));
-	    EXPECT_STREQ("ossrs.net", m.host().c_str()); EXPECT_FALSE(m.is_jsonp());
-	}
+    if (true) {
+        SrsHttpMessage m;
+        HELPER_EXPECT_SUCCESS(m.set_url("http://127.0.0.1/live/livestream.flv?domain=ossrs.net", false));
+        EXPECT_STREQ("ossrs.net", m.host().c_str()); EXPECT_FALSE(m.is_jsonp());
+    }
+
+    if (true) {
+        SrsHttpMessage m;
+        HELPER_EXPECT_SUCCESS(m.set_url("http://127.0.0.1/live/livestream.flv?vhost=ossrs.net", false));
+        EXPECT_STREQ("ossrs.net", m.host().c_str()); EXPECT_FALSE(m.is_jsonp());
+    }
+
+    if (true) {
+        SrsHttpMessage m;
+        HELPER_EXPECT_SUCCESS(m.set_url("http://127.0.0.1/live/livestream.flv?domain=ossrs.net&token=xxx", false));
+        EXPECT_STREQ("ossrs.net", m.host().c_str()); EXPECT_FALSE(m.is_jsonp());
+    }
+
+    if (true) {
+        SrsHttpMessage m;
+        HELPER_EXPECT_SUCCESS(m.set_url("http://127.0.0.1/live/livestream.flv?token=xxx&domain=ossrs.net", false));
+        EXPECT_STREQ("ossrs.net", m.host().c_str()); EXPECT_FALSE(m.is_jsonp());
+    }
 
 	if (true) {
 	    SrsHttpMessage m;
@@ -616,6 +636,7 @@ VOID TEST(HTTPServerTest, ContentLength)
 
         SrsHttpParser hp; HELPER_ASSERT_SUCCESS(hp.initialize(HTTP_RESPONSE));
         ISrsHttpMessage* msg = NULL; HELPER_ASSERT_SUCCESS(hp.parse_message(&io, &msg));
+        SrsAutoFree(ISrsHttpMessage, msg);
 
         char buf[32]; ssize_t nread = 0;
         ISrsHttpResponseReader* r = msg->body_reader();
@@ -644,6 +665,7 @@ VOID TEST(HTTPServerTest, HTTPChunked)
 
         SrsHttpParser hp; HELPER_ASSERT_SUCCESS(hp.initialize(HTTP_RESPONSE));
         ISrsHttpMessage* msg = NULL; HELPER_ASSERT_SUCCESS(hp.parse_message(&io, &msg));
+        SrsAutoFree(ISrsHttpMessage, msg);
 
         char buf[32]; ssize_t nread = 0;
         ISrsHttpResponseReader* r = msg->body_reader();
@@ -700,6 +722,7 @@ VOID TEST(HTTPServerTest, InfiniteChunked)
 
         SrsHttpParser hp; HELPER_ASSERT_SUCCESS(hp.initialize(HTTP_RESPONSE));
         ISrsHttpMessage* msg = NULL; HELPER_ASSERT_SUCCESS(hp.parse_message(&io, &msg));
+        SrsAutoFree(ISrsHttpMessage, msg);
 
         char buf[32]; ssize_t nread = 0;
         ISrsHttpResponseReader* r = msg->body_reader();
@@ -847,7 +870,12 @@ VOID TEST(TCPServerTest, TCPListen)
 
         srs_close_stfd(pfd);
         srs_close_stfd(pfd2);
+#ifdef SRS_CYGWIN64
+        // Should failed because cygwin does not support REUSE_PORT.
+        HELPER_EXPECT_FAILED(err2);
+#else
         HELPER_EXPECT_SUCCESS(err2);
+#endif
     }
 
     // Typical listen.
@@ -994,11 +1022,7 @@ public:
     virtual srs_error_t do_cycle(srs_netfd_t cfd) {
         srs_error_t err = srs_success;
 
-        SrsStSocket skt;
-        if ((err = skt.initialize(cfd)) != srs_success) {
-            return err;
-        }
-
+        SrsStSocket skt(cfd);
         skt.set_recv_timeout(1 * SRS_UTIME_SECONDS);
         skt.set_send_timeout(1 * SRS_UTIME_SECONDS);
 
@@ -1067,7 +1091,7 @@ VOID TEST(TCPServerTest, TCPClientServer)
         HELPER_ASSERT_SUCCESS(c.write((void*)"Hello", 5, NULL));
 
         char buf[6]; HELPER_ARRAY_INIT(buf, 6, 0);
-        ASSERT_EQ(5, srs_read(c.stfd, buf, 5, 1*SRS_UTIME_SECONDS));
+        ASSERT_EQ(5, srs_read(c.stfd_, buf, 5, 1*SRS_UTIME_SECONDS));
         EXPECT_STREQ("Hello", buf);
     }
 }
@@ -1094,7 +1118,7 @@ VOID TEST(TCPServerTest, CoverUtility)
         hints.ai_family = AF_INET;
 
         addrinfo* r = NULL;
-        SrsAutoFree(addrinfo, r);
+        SrsAutoFreeH(addrinfo, r, freeaddrinfo);
         ASSERT_TRUE(!getaddrinfo("127.0.0.1", NULL, &hints, &r));
 
         EXPECT_FALSE(srs_net_device_is_internet((sockaddr*)r->ai_addr));
@@ -1107,7 +1131,7 @@ VOID TEST(TCPServerTest, CoverUtility)
         hints.ai_family = AF_INET;
 
         addrinfo* r = NULL;
-        SrsAutoFree(addrinfo, r);
+        SrsAutoFreeH(addrinfo, r, freeaddrinfo);
         ASSERT_TRUE(!getaddrinfo("192.168.0.1", NULL, &hints, &r));
 
         EXPECT_FALSE(srs_net_device_is_internet((sockaddr*)r->ai_addr));
@@ -1152,7 +1176,7 @@ VOID TEST(TCPServerTest, CoverUtility)
         hints.ai_family = AF_INET6;
 
         addrinfo* r = NULL;
-        SrsAutoFree(addrinfo, r);
+        SrsAutoFreeH(addrinfo, r, freeaddrinfo);
         ASSERT_TRUE(!getaddrinfo("2001:da8:6000:291:21f:d0ff:fed4:928c", NULL, &hints, &r));
 
         EXPECT_TRUE(srs_net_device_is_internet((sockaddr*)r->ai_addr));
@@ -1163,7 +1187,7 @@ VOID TEST(TCPServerTest, CoverUtility)
         hints.ai_family = AF_INET6;
 
         addrinfo* r = NULL;
-        SrsAutoFree(addrinfo, r);
+        SrsAutoFreeH(addrinfo, r, freeaddrinfo);
         ASSERT_TRUE(!getaddrinfo("3ffe:dead:beef::1", NULL, &hints, &r));
 
         EXPECT_TRUE(srs_net_device_is_internet((sockaddr*)r->ai_addr));
@@ -1176,7 +1200,7 @@ VOID TEST(TCPServerTest, CoverUtility)
         hints.ai_family = AF_INET6;
 
         addrinfo* r = NULL;
-        SrsAutoFree(addrinfo, r);
+        SrsAutoFreeH(addrinfo, r, freeaddrinfo);
         ASSERT_TRUE(!getaddrinfo("::", NULL, &hints, &r));
 
         EXPECT_FALSE(srs_net_device_is_internet((sockaddr*)r->ai_addr));
@@ -1189,7 +1213,7 @@ VOID TEST(TCPServerTest, CoverUtility)
         hints.ai_family = AF_INET6;
 
         addrinfo* r = NULL;
-        SrsAutoFree(addrinfo, r);
+        SrsAutoFreeH(addrinfo, r, freeaddrinfo);
         ASSERT_TRUE(!getaddrinfo("fec0::", NULL, &hints, &r));
 
         EXPECT_FALSE(srs_net_device_is_internet((sockaddr*)r->ai_addr));
@@ -1202,7 +1226,7 @@ VOID TEST(TCPServerTest, CoverUtility)
         hints.ai_family = AF_INET6;
 
         addrinfo* r = NULL;
-        SrsAutoFree(addrinfo, r);
+        SrsAutoFreeH(addrinfo, r, freeaddrinfo);
         ASSERT_TRUE(!getaddrinfo("FE80::", NULL, &hints, &r));
 
         EXPECT_FALSE(srs_net_device_is_internet((sockaddr*)r->ai_addr));
@@ -1215,7 +1239,7 @@ VOID TEST(TCPServerTest, CoverUtility)
         hints.ai_family = AF_INET6;
 
         addrinfo* r = NULL;
-        SrsAutoFree(addrinfo, r);
+        SrsAutoFreeH(addrinfo, r, freeaddrinfo);
         ASSERT_TRUE(!getaddrinfo("::1", NULL, &hints, &r));
 
         EXPECT_FALSE(srs_net_device_is_internet((sockaddr*)r->ai_addr));
@@ -1245,11 +1269,7 @@ public:
     virtual srs_error_t do_cycle(srs_netfd_t cfd) {
         srs_error_t err = srs_success;
 
-        SrsStSocket skt;
-        if ((err = skt.initialize(cfd)) != srs_success) {
-            return err;
-        }
-
+        SrsStSocket skt(cfd);
         skt.set_recv_timeout(1 * SRS_UTIME_SECONDS);
         skt.set_send_timeout(1 * SRS_UTIME_SECONDS);
 
@@ -1514,7 +1534,8 @@ VOID TEST(ThreadCriticalTest, FailIfCloseActiveFD)
     srs_error_t err;
 
     MockTcpHandler h;
-    SrsTcpListener l(&h, _srs_tmp_host, _srs_tmp_port);
+    SrsTcpListener l(&h);
+    l.set_endpoint(_srs_tmp_host, _srs_tmp_port);
     HELPER_EXPECT_SUCCESS(l.listen());
 
     SrsTcpClient c0(_srs_tmp_host, _srs_tmp_port, _srs_tmp_timeout);

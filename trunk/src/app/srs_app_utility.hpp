@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2021 The SRS Authors
+// Copyright (c) 2013-2023 The SRS Authors
 //
 // SPDX-License-Identifier: MIT or MulanPSL-2.0
 //
@@ -19,7 +19,7 @@
 
 #include <srs_app_st.hpp>
 #include <srs_kernel_log.hpp>
-#include <srs_service_utility.hpp>
+#include <srs_protocol_utility.hpp>
 
 class SrsKbps;
 class SrsBuffer;
@@ -28,6 +28,7 @@ class SrsJsonObject;
 // Convert level in string to log level in int.
 // @return the log level defined in SrsLogLevel.
 extern SrsLogLevel srs_get_log_level(std::string level);
+extern SrsLogLevel srs_get_log_level_v2(std::string level);
 
 // Build the path according to vhost/app/stream, where replace variables:
 //       [vhost], the vhost of stream.
@@ -684,8 +685,8 @@ extern std::string srs_string_dumps_hex(const char* str, int length, int limit);
 extern std::string srs_string_dumps_hex(const char* str, int length, int limit, char seperator, int line_limit, char newline);
 
 // Get ENV variable, which may starts with $.
-//      srs_getenv("EIP") === srs_getenv("$EIP")
-extern std::string srs_getenv(std::string key);
+//      srs_getenv("EIP") is srs_getenv("$EIP")
+extern std::string srs_getenv(const std::string& key);
 
 #endif
 

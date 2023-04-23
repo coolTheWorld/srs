@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2021 The SRS Authors
+// Copyright (c) 2013-2023 The SRS Authors
 //
 // SPDX-License-Identifier: MIT or MulanPSL-2.0
 //
@@ -22,6 +22,7 @@ class SrsLatestVersion : public ISrsCoroutineHandler
 private:
     SrsCoroutine* trd_;
     std::string server_id_;
+    std::string session_id_;
 private:
     std::string match_version_;
     std::string stable_version_;

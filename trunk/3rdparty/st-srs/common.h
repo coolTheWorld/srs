@@ -170,7 +170,6 @@ typedef struct _st_cond {
     _st_clist_t wait_q;          /* Condition variable wait queue */
 } _st_cond_t;
 
-
 typedef struct _st_thread _st_thread_t;
 
 struct _st_thread {
@@ -198,7 +197,7 @@ struct _st_thread {
 
     _st_cond_t *term;           /* Termination condition variable for join */
 
-    jmp_buf context;            /* Thread's context */
+    _st_jmp_buf_t context;            /* Thread's context */
 };
 
 
@@ -227,6 +226,7 @@ typedef struct _st_eventsys_ops {
     int  (*fd_new)(int);                       /* New descriptor allocated */
     int  (*fd_close)(int);                     /* Descriptor closed */
     int  (*fd_getlimit)(void);                 /* Descriptor hard limit */
+    void (*destroy)(void);                     /* Destroy the event object */
 } _st_eventsys_t;
 
 
@@ -266,9 +266,9 @@ typedef struct _st_netfd {
  * Current vp, thread, and event system
  */
 
-extern _st_vp_t        _st_this_vp;
-extern _st_thread_t *_st_this_thread;
-extern _st_eventsys_t *_st_eventsys;
+extern __thread _st_vp_t        _st_this_vp;
+extern __thread _st_thread_t *_st_this_thread;
+extern __thread _st_eventsys_t *_st_eventsys;
 
 #define _ST_CURRENT_THREAD()            (_st_this_thread)
 #define _ST_SET_CURRENT_THREAD(_thread) (_st_this_thread = (_thread))

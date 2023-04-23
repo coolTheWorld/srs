@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2021 The SRS Authors
+// Copyright (c) 2013-2023 The SRS Authors
 //
 // SPDX-License-Identifier: MIT or MulanPSL-2.0
 //
@@ -14,12 +14,15 @@ static const AVCodec* srs_find_decoder_by_id(SrsAudioCodecId id)
 {
     if (id == SrsAudioCodecIdAAC) {
         return avcodec_find_decoder_by_name("aac");
+    } else if (id == SrsAudioCodecIdMP3) {
+        return avcodec_find_decoder_by_name("mp3");
     } else if (id == SrsAudioCodecIdOpus) {
-        const AVCodec* codec = avcodec_find_decoder_by_name("libopus");
-        if (!codec) {
-            codec = avcodec_find_decoder_by_name("opus");
-        }
-        return codec;
+#ifdef SRS_FFMPEG_OPUS
+        // TODO: FIXME: Note that the audio might be corrupted, see https://github.com/ossrs/srs/issues/3140
+        return avcodec_find_decoder_by_name("opus");
+#else
+        return avcodec_find_decoder_by_name("libopus");
+#endif
     }
     return NULL;
 }
@@ -29,11 +32,12 @@ static const AVCodec* srs_find_encoder_by_id(SrsAudioCodecId id)
     if (id == SrsAudioCodecIdAAC) {
         return avcodec_find_encoder_by_name("aac");
     } else if (id == SrsAudioCodecIdOpus) {
-        const AVCodec* codec = avcodec_find_encoder_by_name("libopus");
-        if (!codec) {
-            codec = avcodec_find_encoder_by_name("opus");
-        }
-        return codec;
+#ifdef SRS_FFMPEG_OPUS
+        // TODO: FIXME: Note that the audio might be corrupted, see https://github.com/ossrs/srs/issues/3140
+        return avcodec_find_encoder_by_name("opus");
+#else
+        return avcodec_find_encoder_by_name("libopus");
+#endif
     }
     return NULL;
 }
@@ -49,7 +53,7 @@ public:
     {
         static char buf[4096] = {0};
         int nbytes = vsnprintf(buf, sizeof(buf), fmt, vl);
-        if (nbytes > 0) {
+        if (nbytes > 0 && nbytes < (int)sizeof(buf)) {
             // Srs log is always start with new line, replcae '\n' to '\0', make log easy to read.
             if (buf[nbytes - 1] == '\n') {
                 buf[nbytes - 1] = '\0';

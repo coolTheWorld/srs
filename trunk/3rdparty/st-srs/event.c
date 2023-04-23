@@ -51,10 +51,10 @@
 
 // Global stat.
 #if defined(DEBUG) && defined(DEBUG_STATS)
-unsigned long long _st_stat_epoll = 0;
-unsigned long long _st_stat_epoll_zero = 0;
-unsigned long long _st_stat_epoll_shake = 0;
-unsigned long long _st_stat_epoll_spin = 0;
+__thread unsigned long long _st_stat_epoll = 0;
+__thread unsigned long long _st_stat_epoll_zero = 0;
+__thread unsigned long long _st_stat_epoll_shake = 0;
+__thread unsigned long long _st_stat_epoll_spin = 0;
 #endif
 
 #if !defined(MD_HAVE_KQUEUE) && !defined(MD_HAVE_EPOLL) && !defined(MD_HAVE_SELECT)
@@ -86,7 +86,7 @@ typedef struct _kq_fd_data {
     int revents;
 } _kq_fd_data_t;
 
-static struct _st_kqdata {
+static __thread struct _st_kqdata {
     _kq_fd_data_t *fd_data;
     struct kevent *evtlist;
     struct kevent *addlist;
@@ -119,7 +119,7 @@ typedef struct _epoll_fd_data {
     int revents;
 } _epoll_fd_data_t;
 
-static struct _st_epolldata {
+static __thread struct _st_epolldata {
     _epoll_fd_data_t *fd_data;
     struct epoll_event *evtlist;
     int fd_data_size;
@@ -147,7 +147,7 @@ static struct _st_epolldata {
 
 #endif  /* MD_HAVE_EPOLL */
 
-_st_eventsys_t *_st_eventsys = NULL;
+__thread _st_eventsys_t *_st_eventsys = NULL;
 
 
 #ifdef MD_HAVE_SELECT
@@ -430,6 +430,11 @@ ST_HIDDEN int _st_select_fd_getlimit(void)
     return FD_SETSIZE;
 }
 
+ST_HIDDEN void _st_select_destroy(void)
+{
+    /* TODO: FIXME: Implements it */
+}
+
 static _st_eventsys_t _st_select_eventsys = {
         "select",
         ST_EVENTSYS_SELECT,
@@ -439,7 +444,8 @@ static _st_eventsys_t _st_select_eventsys = {
         _st_select_pollset_del,
         _st_select_fd_new,
         _st_select_fd_close,
-        _st_select_fd_getlimit
+        _st_select_fd_getlimit,
+        _st_select_destroy
 };
 #endif
 
@@ -838,6 +844,11 @@ ST_HIDDEN int _st_kq_fd_getlimit(void)
     return 0;
 }
 
+ST_HIDDEN void _st_kq_destroy(void)
+{
+    /* TODO: FIXME: Implements it */
+}
+
 static _st_eventsys_t _st_kq_eventsys = {
     "kqueue",
     ST_EVENTSYS_ALT,
@@ -847,7 +858,8 @@ static _st_eventsys_t _st_kq_eventsys = {
     _st_kq_pollset_del,
     _st_kq_fd_new,
     _st_kq_fd_close,  
-    _st_kq_fd_getlimit
+    _st_kq_fd_getlimit,
+    _st_kq_destroy
 };
 #endif  /* MD_HAVE_KQUEUE */
 
@@ -856,7 +868,6 @@ static _st_eventsys_t _st_kq_eventsys = {
 /*****************************************
  * epoll event system
  */
-
 ST_HIDDEN int _st_epoll_init(void)
 {
     int fdlim;
@@ -1193,6 +1204,17 @@ ST_HIDDEN int _st_epoll_is_supported(void)
     return (errno != ENOSYS);
 }
 
+ST_HIDDEN void _st_epoll_destroy(void)
+{
+    if (_st_epoll_data->epfd >= 0) {
+        close(_st_epoll_data->epfd);
+    }
+    free(_st_epoll_data->fd_data);
+    free(_st_epoll_data->evtlist);
+    free(_st_epoll_data);
+    _st_epoll_data = NULL;
+}
+
 static _st_eventsys_t _st_epoll_eventsys = {
     "epoll",
     ST_EVENTSYS_ALT,
@@ -1202,7 +1224,8 @@ static _st_eventsys_t _st_epoll_eventsys = {
     _st_epoll_pollset_del,
     _st_epoll_fd_new,
     _st_epoll_fd_close,
-    _st_epoll_fd_getlimit
+    _st_epoll_fd_getlimit,
+    _st_epoll_destroy
 };
 #endif  /* MD_HAVE_EPOLL */
 

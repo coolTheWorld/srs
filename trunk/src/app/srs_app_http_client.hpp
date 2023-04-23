@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2021 The SRS Authors
+// Copyright (c) 2013-2023 The SRS Authors
 //
 // SPDX-License-Identifier: MIT or MulanPSL-2.0
 //
@@ -9,7 +9,7 @@
 
 #include <srs_core.hpp>
 
-#include <srs_service_http_client.hpp>
+#include <srs_protocol_http_client.hpp>
 
 #endif
 

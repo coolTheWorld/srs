@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2021 The SRS Authors
+// Copyright (c) 2013-2023 The SRS Authors
 //
 // SPDX-License-Identifier: MIT or MulanPSL-2.0
 //
@@ -32,6 +32,9 @@ private:
     // The ep to forward, server[:port].
     std::string ep_forward;
     SrsRequest* req;
+private:
+    // The source or stream context id to bind to.
+    SrsContextId source_cid_;
 private:
     SrsCoroutine* trd;
 private:

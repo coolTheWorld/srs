@@ -1,11 +1,11 @@
 //
-// Copyright (c) 2013-2021 The SRS Authors
+// Copyright (c) 2013-2023 The SRS Authors
 //
 // SPDX-License-Identifier: MIT or MulanPSL-2.0
 //
 #include <srs_utest_avc.hpp>
 
-#include <srs_raw_avc.hpp>
+#include <srs_protocol_raw_avc.hpp>
 #include <srs_kernel_buffer.hpp>
 #include <srs_kernel_error.hpp>
 #include <srs_core_autofree.hpp>
@@ -113,7 +113,7 @@ VOID TEST(SrsAVCTest, H264SequenceHeader)
     // For muxing sequence header.
     if (true) {
         SrsRawH264Stream h; string sh;
-        HELPER_ASSERT_SUCCESS(h.mux_sequence_header("Hello", "world", 0, 0, sh));
+        HELPER_ASSERT_SUCCESS(h.mux_sequence_header("Hello", "world", sh));
         EXPECT_EQ(11+5+5, (int)sh.length());
         EXPECT_STREQ("Hello", sh.substr(8, 5).c_str());
         EXPECT_STREQ("world", sh.substr(16).c_str());
@@ -222,7 +222,7 @@ VOID TEST(SrsAVCTest, H264IPBFrame)
         EXPECT_EQ(SrsVideoAvcFrameTraitSequenceHeader, uint8_t(flv[1]));
         EXPECT_EQ(01, flv[2]); EXPECT_EQ(02, flv[3]); EXPECT_EQ(03, flv[4]);
         EXPECT_STREQ("Hello", HELPER_ARR2STR(flv+5, 5).c_str());
-        srs_freep(flv);
+        srs_freepa(flv);
     }
 
     // For muxing I/P/B frame.
@@ -493,7 +493,7 @@ VOID TEST(SrsAVCTest, AACMuxToFLV)
         EXPECT_EQ(6, nb_flv);
         EXPECT_EQ(0x23, (uint8_t)flv[0]);
         EXPECT_STREQ("Hello", HELPER_ARR2STR(flv+1,5).c_str());
-        srs_freep(flv);
+        srs_freepa(flv);
     }
 
     // For Opus frame.
@@ -508,7 +508,7 @@ VOID TEST(SrsAVCTest, AACMuxToFLV)
         EXPECT_EQ(6, nb_flv);
         EXPECT_EQ(0xd3, (uint8_t)flv[0]);
         EXPECT_STREQ("Hello", HELPER_ARR2STR(flv+1,5).c_str());
-        srs_freep(flv);
+        srs_freepa(flv);
     }
 
     // For Speex frame.
@@ -523,7 +523,7 @@ VOID TEST(SrsAVCTest, AACMuxToFLV)
         EXPECT_EQ(6, nb_flv);
         EXPECT_EQ(0xb3, (uint8_t)flv[0]);
         EXPECT_STREQ("Hello", HELPER_ARR2STR(flv+1,5).c_str());
-        srs_freep(flv);
+        srs_freepa(flv);
     }
 
     // For AAC frame.
@@ -539,7 +539,7 @@ VOID TEST(SrsAVCTest, AACMuxToFLV)
         EXPECT_EQ(0xa3, (uint8_t)flv[0]);
         EXPECT_EQ(0x04, (uint8_t)flv[1]);
         EXPECT_STREQ("Hello", HELPER_ARR2STR(flv+2,5).c_str());
-        srs_freep(flv);
+        srs_freepa(flv);
     }
     if (true) {
         SrsRawAacStream h;
@@ -553,7 +553,7 @@ VOID TEST(SrsAVCTest, AACMuxToFLV)
         EXPECT_EQ(0xa6, (uint8_t)flv[0]);
         EXPECT_EQ(0x04, (uint8_t)flv[1]);
         EXPECT_STREQ("Hello", HELPER_ARR2STR(flv+2,5).c_str());
-        srs_freep(flv);
+        srs_freepa(flv);
     }
     if (true) {
         SrsRawAacStream h;
@@ -567,7 +567,7 @@ VOID TEST(SrsAVCTest, AACMuxToFLV)
         EXPECT_EQ(0xa5, (uint8_t)flv[0]);
         EXPECT_EQ(0x04, (uint8_t)flv[1]);
         EXPECT_STREQ("Hello", HELPER_ARR2STR(flv+2,5).c_str());
-        srs_freep(flv);
+        srs_freepa(flv);
     }
     if (true) {
         SrsRawAacStream h;
@@ -581,7 +581,7 @@ VOID TEST(SrsAVCTest, AACMuxToFLV)
         EXPECT_EQ(0xa7, (uint8_t)flv[0]);
         EXPECT_EQ(0x04, (uint8_t)flv[1]);
         EXPECT_STREQ("Hello", HELPER_ARR2STR(flv+2,5).c_str());
-        srs_freep(flv);
+        srs_freepa(flv);
     }
     if (true) {
         SrsRawAacStream h;
@@ -595,7 +595,7 @@ VOID TEST(SrsAVCTest, AACMuxToFLV)
         EXPECT_EQ(0xaf, (uint8_t)flv[0]);
         EXPECT_EQ(0x04, (uint8_t)flv[1]);
         EXPECT_STREQ("Hello", HELPER_ARR2STR(flv+2,5).c_str());
-        srs_freep(flv);
+        srs_freepa(flv);
     }
 }
 

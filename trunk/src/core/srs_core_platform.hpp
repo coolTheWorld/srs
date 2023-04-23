@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2021 The SRS Authors
+// Copyright (c) 2013-2023 The SRS Authors
 //
 // SPDX-License-Identifier: MIT or MulanPSL-2.0
 //
@@ -26,11 +26,6 @@
 // For srs-librtmp, @see https://github.com/ossrs/srs/issues/213
 #ifndef _WIN32
 #include <inttypes.h>
-#endif
-
-#include <assert.h>
-#ifndef srs_assert
-#define srs_assert(expression) assert(expression)
 #endif
 
 #include <stddef.h>

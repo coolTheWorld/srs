@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2021 The SRS Authors
+// Copyright (c) 2013-2023 The SRS Authors
 //
 // SPDX-License-Identifier: MIT or MulanPSL-2.0
 //
@@ -13,10 +13,13 @@
 #include <srs_utest.hpp>
 
 #include <string>
+#include <vector>
+
 #include <srs_kernel_file.hpp>
 #include <srs_kernel_buffer.hpp>
 #include <srs_protocol_stream.hpp>
 #include <srs_kernel_ts.hpp>
+#include <srs_kernel_ps.hpp>
 #include <srs_kernel_stream.hpp>
 
 class MockSrsFile
@@ -34,6 +37,15 @@ public:
     virtual srs_error_t write(void* data, size_t count, ssize_t* pnwrite);
     virtual srs_error_t read(void* data, size_t count, ssize_t* pnread);
     virtual srs_error_t lseek(off_t offset, int whence, off_t* seeked);
+};
+
+class MockFileRemover
+{
+private:
+    std::string path_;
+public:
+    MockFileRemover(std::string p);
+    virtual ~MockFileRemover();
 };
 
 class MockSrsFileWriter : public SrsFileWriter
@@ -127,6 +139,20 @@ public:
     virtual ~MockTsHandler();
 public:
     virtual srs_error_t on_ts_message(SrsTsMessage* m);
+};
+
+class MockPsHandler : public ISrsPsMessageHandler
+{
+public:
+    std::vector<SrsTsMessage*> msgs_;
+public:
+    MockPsHandler();
+    virtual ~MockPsHandler();
+public:
+    virtual srs_error_t on_ts_message(SrsTsMessage* m);
+    virtual void on_recover_mode(int nn_recover);
+    virtual void on_recover_done(srs_utime_t duration);
+    MockPsHandler* clear();
 };
 
 #endif

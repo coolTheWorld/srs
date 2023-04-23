@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2021 The SRS Authors
+// Copyright (c) 2013-2023 The SRS Authors
 //
 // SPDX-License-Identifier: MIT or MulanPSL-2.0
 //
@@ -11,7 +11,7 @@
 using namespace std;
 
 #include <srs_kernel_log.hpp>
-#include <srs_rtmp_stack.hpp>
+#include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_amf0.hpp>
 #include <srs_kernel_codec.hpp>
 #include <srs_kernel_rtc_rtp.hpp>
@@ -19,13 +19,13 @@ using namespace std;
 #include <srs_app_forward.hpp>
 #include <srs_app_config.hpp>
 #include <srs_app_encoder.hpp>
-#include <srs_rtmp_stack.hpp>
+#include <srs_protocol_rtmp_stack.hpp>
 #include <srs_app_dvr.hpp>
 #include <srs_kernel_buffer.hpp>
 #include <srs_app_edge.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_kernel_codec.hpp>
-#include <srs_rtmp_msg_array.hpp>
+#include <srs_protocol_rtmp_msg_array.hpp>
 #include <srs_app_hds.hpp>
 #include <srs_app_statistic.hpp>
 #include <srs_core_autofree.hpp>
@@ -575,6 +575,7 @@ SrsGopCache::SrsGopCache()
     cached_video_count = 0;
     enable_gop_cache = true;
     audio_after_last_video_count = 0;
+    gop_cache_max_frames_ = 0;
 }
 
 SrsGopCache::~SrsGopCache()
@@ -597,6 +598,11 @@ void SrsGopCache::set(bool v)
     }
 }
 
+void SrsGopCache::set_gop_cache_max_frames(int v)
+{
+    gop_cache_max_frames_ = v;
+}
+
 bool SrsGopCache::enabled()
 {
     return enable_gop_cache;
@@ -615,11 +621,13 @@ srs_error_t SrsGopCache::cache(SrsSharedPtrMessage* shared_msg)
     
     // got video, update the video count if acceptable
     if (msg->is_video()) {
-        // drop video when not h.264
-        if (!SrsFlvVideo::h264(msg->payload, msg->size)) {
-            return err;
-        }
-        
+        // Drop video when not h.264 or h.265.
+        bool codec_ok = SrsFlvVideo::h264(msg->payload, msg->size);
+#ifdef SRS_H265
+        codec_ok = codec_ok ? true : SrsFlvVideo::hevc(msg->payload, msg->size);
+#endif
+        if (!codec_ok) return err;
+
         cached_video_count++;
         audio_after_last_video_count = 0;
     }
@@ -648,10 +656,17 @@ srs_error_t SrsGopCache::cache(SrsSharedPtrMessage* shared_msg)
         // curent msg is video frame, so we set to 1.
         cached_video_count = 1;
     }
-    
+
     // cache the frame.
     gop_cache.push_back(msg->copy());
-    
+
+    // Clear gop cache if exceed the max frames.
+    if (gop_cache_max_frames_ > 0 && gop_cache.size() > (size_t)gop_cache_max_frames_) {
+        srs_warn("Gop cache exceed max frames=%d, total=%d, videos=%d, aalvc=%d",
+            gop_cache_max_frames_, (int)gop_cache.size(), cached_video_count, audio_after_last_video_count);
+        clear();
+    }
+
     return err;
 }
 
@@ -819,7 +834,6 @@ SrsOriginHub::SrsOriginHub()
     hds = new SrsHds();
 #endif
     ng_exec = new SrsNgExec();
-    format = new SrsRtmpFormat();
     
     _srs_config->subscribe(this);
 }
@@ -837,8 +851,7 @@ SrsOriginHub::~SrsOriginHub()
         forwarders.clear();
     }
     srs_freep(ng_exec);
-    
-    srs_freep(format);
+
     srs_freep(hls);
     srs_freep(dash);
     srs_freep(dvr);
@@ -854,10 +867,6 @@ srs_error_t SrsOriginHub::initialize(SrsLiveSource* s, SrsRequest* r)
     
     req_ = r;
     source = s;
-    
-    if ((err = format->initialize()) != srs_success) {
-        return srs_error_wrap(err, "format initialize");
-    }
     
     if ((err = hls->initialize(this, req_)) != srs_success) {
         return srs_error_wrap(err, "hls initialize");
@@ -877,8 +886,7 @@ srs_error_t SrsOriginHub::initialize(SrsLiveSource* s, SrsRequest* r)
 void SrsOriginHub::dispose()
 {
     hls->dispose();
-    
-    // TODO: Support dispose DASH.
+    dash->dispose();
 }
 
 srs_error_t SrsOriginHub::cycle()
@@ -889,7 +897,9 @@ srs_error_t SrsOriginHub::cycle()
         return srs_error_wrap(err, "hls cycle");
     }
     
-    // TODO: Support cycle DASH.
+    if ((err = dash->cycle()) != srs_success) {
+        return srs_error_wrap(err, "dash cycle");
+    }
     
     return err;
 }
@@ -902,10 +912,6 @@ bool SrsOriginHub::active()
 srs_error_t SrsOriginHub::on_meta_data(SrsSharedPtrMessage* shared_metadata, SrsOnMetaDataPacket* packet)
 {
     srs_error_t err = srs_success;
-    
-    if ((err = format->on_metadata(packet)) != srs_success) {
-        return srs_error_wrap(err, "Format parse metadata");
-    }
     
     // copy to all forwarders
     if (true) {
@@ -930,21 +936,10 @@ srs_error_t SrsOriginHub::on_audio(SrsSharedPtrMessage* shared_audio)
     srs_error_t err = srs_success;
     
     SrsSharedPtrMessage* msg = shared_audio;
-
-    // TODO: FIXME: Support parsing OPUS for RTC.
-    if ((err = format->on_audio(msg)) != srs_success) {
-        return srs_error_wrap(err, "format consume audio");
-    }
-
-    // Ignore if no format->acodec, it means the codec is not parsed, or unsupport/unknown codec
-    // such as G.711 codec
-    if (!format->acodec) {
-        return err;
-    }
+    SrsRtmpFormat* format = source->format_;
     
-    // cache the sequence header if aac
-    // donot cache the sequence header to gop_cache, return here.
-    if (format->is_aac_sequence_header()) {
+    // Handle the metadata when got sequence header.
+    if (format->is_aac_sequence_header() || format->is_mp3_sequence_header()) {
         srs_assert(format->acodec);
         SrsAudioCodecConfig* c = format->acodec;
         
@@ -953,15 +948,21 @@ srs_error_t SrsOriginHub::on_audio(SrsSharedPtrMessage* shared_audio)
         
         // when got audio stream info.
         SrsStatistic* stat = SrsStatistic::instance();
-        if ((err = stat->on_audio_info(req_, SrsAudioCodecIdAAC, c->sound_rate, c->sound_type, c->aac_object)) != srs_success) {
+        if ((err = stat->on_audio_info(req_, format->acodec->id, c->sound_rate, c->sound_type, c->aac_object)) != srs_success) {
             return srs_error_wrap(err, "stat audio");
         }
-        
-        srs_trace("%dB audio sh, codec(%d, profile=%s, %dchannels, %dkbps, %dHZ), flv(%dbits, %dchannels, %dHZ)",
-                  msg->size, c->id, srs_aac_object2str(c->aac_object).c_str(), c->aac_channels,
-                  c->audio_data_rate / 1000, srs_aac_srates[c->aac_sample_rate],
-                  flv_sample_sizes[c->sound_size], flv_sound_types[c->sound_type],
-                  srs_flv_srates[c->sound_rate]);
+
+        if (format->acodec->id == SrsAudioCodecIdMP3) {
+            srs_trace("%dB audio sh, codec(%d, %dbits, %dchannels, %dHZ)",
+                msg->size, c->id, flv_sample_sizes[c->sound_size], flv_sound_types[c->sound_type],
+                srs_flv_srates[c->sound_rate]);
+        } else {
+            srs_trace("%dB audio sh, codec(%d, profile=%s, %dchannels, %dkbps, %dHZ), flv(%dbits, %dchannels, %dHZ)",
+                msg->size, c->id, srs_aac_object2str(c->aac_object).c_str(), c->aac_channels,
+                c->audio_data_rate / 1000, srs_aac_srates[c->aac_sample_rate],
+                flv_sample_sizes[c->sound_size], flv_sound_types[c->sound_type],
+                srs_flv_srates[c->sound_rate]);
+        }
     }
     
     if ((err = hls->on_audio(msg, format)) != srs_success) {
@@ -1022,22 +1023,7 @@ srs_error_t SrsOriginHub::on_video(SrsSharedPtrMessage* shared_video, bool is_se
     srs_error_t err = srs_success;
     
     SrsSharedPtrMessage* msg = shared_video;
-    
-    // user can disable the sps parse to workaround when parse sps failed.
-    // @see https://github.com/ossrs/srs/issues/474
-    if (is_sequence_header) {
-        format->avc_parse_sps = _srs_config->get_parse_sps(req_->vhost);
-    }
-    
-    if ((err = format->on_video(msg)) != srs_success) {
-        return srs_error_wrap(err, "format consume video");
-    }
-   
-    // Ignore if no format->vcodec, it means the codec is not parsed, or unsupport/unknown codec
-    // such as H.263 codec
-    if (!format->vcodec) {
-        return err;
-    }
+    SrsRtmpFormat* format = source->format_;
  
     // cache the sequence header if h264
     // donot cache the sequence header to gop_cache, return here.
@@ -1047,14 +1033,23 @@ srs_error_t SrsOriginHub::on_video(SrsSharedPtrMessage* shared_video, bool is_se
         
         // when got video stream info.
         SrsStatistic* stat = SrsStatistic::instance();
-        if ((err = stat->on_video_info(req_, SrsVideoCodecIdAVC, c->avc_profile, c->avc_level, c->width, c->height)) != srs_success) {
+
+        if (c->id == SrsVideoCodecIdAVC) {
+            err = stat->on_video_info(req_, c->id, c->avc_profile, c->avc_level, c->width, c->height);
+            srs_trace("%dB video sh, codec(%d, profile=%s, level=%s, %dx%d, %dkbps, %.1ffps, %.1fs)",
+                msg->size, c->id, srs_avc_profile2str(c->avc_profile).c_str(), srs_avc_level2str(c->avc_level).c_str(),
+                c->width, c->height, c->video_data_rate / 1000, c->frame_rate, c->duration);
+#ifdef SRS_H265
+        } else if (c->id == SrsVideoCodecIdHEVC) {
+            err = stat->on_video_info(req_, c->id, c->hevc_profile, c->hevc_level, c->width, c->height);
+            srs_trace("%dB video sh, codec(%d, profile=%s, level=%s, %dx%d, %dkbps, %.1ffps, %.1fs)",
+                msg->size, c->id, srs_hevc_profile2str(c->hevc_profile).c_str(), srs_hevc_level2str(c->hevc_level).c_str(),
+                c->width, c->height, c->video_data_rate / 1000, c->frame_rate, c->duration);
+#endif
+        }
+        if (err != srs_success) {
             return srs_error_wrap(err, "stat video");
         }
-        
-        srs_trace("%dB video sh,  codec(%d, profile=%s, level=%s, %dx%d, %dkbps, %.1ffps, %.1fs)",
-                  msg->size, c->id, srs_avc_profile2str(c->avc_profile).c_str(),
-                  srs_avc_level2str(c->avc_level).c_str(), c->width, c->height,
-                  c->video_data_rate / 1000, c->frame_rate, c->duration);
     }
 
     // Ignore video data when no sps/pps
@@ -1146,7 +1141,7 @@ srs_error_t SrsOriginHub::on_publish()
     
     // TODO: FIXME: use initialize to set req.
 #ifdef SRS_HDS
-    if ((err = hds->on_publish(req)) != srs_success) {
+    if ((err = hds->on_publish(req_)) != srs_success) {
         return srs_error_wrap(err, "hds publish");
     }
 #endif
@@ -1278,6 +1273,8 @@ srs_error_t SrsOriginHub::on_reload_vhost_dash(string vhost)
     if ((err = dash->on_publish()) != srs_success) {
         return srs_error_wrap(err, "dash start publish");
     }
+
+    SrsRtmpFormat* format = source->format_;
     
     SrsSharedPtrMessage* cache_sh_video = source->meta->vsh();
     if (cache_sh_video) {
@@ -1323,6 +1320,8 @@ srs_error_t SrsOriginHub::on_reload_vhost_hls(string vhost)
         return srs_error_wrap(err, "hls publish failed");
     }
     srs_trace("vhost %s hls reload success", vhost.c_str());
+
+    SrsRtmpFormat* format = source->format_;
     
     // when publish, don't need to fetch sequence header, which is old and maybe corrupt.
     // when reload, we must fetch the sequence header from source cache.
@@ -1370,7 +1369,7 @@ srs_error_t SrsOriginHub::on_reload_vhost_hds(string vhost)
         return err;
     }
     
-    if ((err = hds->on_publish(req)) != srs_success) {
+    if ((err = hds->on_publish(req_)) != srs_success) {
         return srs_error_wrap(err, "hds publish failed");
     }
     srs_trace("vhost %s hds reload success", vhost.c_str());
@@ -1647,8 +1646,10 @@ srs_error_t SrsMetaCache::dumps(SrsLiveConsumer* consumer, bool atc, SrsRtmpJitt
     // copy sequence header
     // copy audio sequence first, for hls to fast parse the "right" audio codec.
     // @see https://github.com/ossrs/srs/issues/301
-    if (ds && audio && (err = consumer->enqueue(audio, atc, ag)) != srs_success) {
-        return srs_error_wrap(err, "enqueue audio sh");
+    if (aformat && aformat->acodec && aformat->acodec->id != SrsAudioCodecIdMP3) {
+        if (ds && audio && (err = consumer->enqueue(audio, atc, ag)) != srs_success) {
+            return srs_error_wrap(err, "enqueue audio sh");
+        }
     }
     
     if (ds && video && (err = consumer->enqueue(video, atc, ag)) != srs_success) {
@@ -1802,7 +1803,7 @@ srs_error_t SrsLiveSourceManager::fetch_or_create(SrsRequest* r, ISrsLiveSourceH
     // should always not exists for create a source.
     srs_assert (pool.find(stream_url) == pool.end());
 
-    srs_trace("new source, stream_url=%s", stream_url.c_str());
+    srs_trace("new live source, stream_url=%s", stream_url.c_str());
 
     source = new SrsLiveSource();
     if ((err = source->initialize(r, h)) != srs_success) {
@@ -1876,7 +1877,7 @@ srs_error_t SrsLiveSourceManager::notify(int event, srs_utime_t interval, srs_ut
         // @see https://github.com/ossrs/srs/issues/714
 #if 0
         // When source expired, remove it.
-        if (source->expired()) {
+        if (source->stream_is_dead()) {
             int cid = source->source_id();
             if (cid == -1 && source->pre_source_id() > 0) {
                 cid = source->pre_source_id();
@@ -1909,14 +1910,6 @@ void SrsLiveSourceManager::destroy()
     pool.clear();
 }
 
-ISrsLiveSourceBridger::ISrsLiveSourceBridger()
-{
-}
-
-ISrsLiveSourceBridger::~ISrsLiveSourceBridger()
-{
-}
-
 SrsLiveSource::SrsLiveSource()
 {
     req = NULL;
@@ -1925,16 +1918,18 @@ SrsLiveSource::SrsLiveSource()
     mix_queue = new SrsMixQueue();
     
     _can_publish = true;
-    die_at = 0;
+    stream_die_at_ = 0;
+    publisher_idle_at_ = 0;
 
     handler = NULL;
-    bridger_ = NULL;
-    
+    bridge_ = NULL;
+
     play_edge = new SrsPlayEdge();
     publish_edge = new SrsPublishEdge();
     gop_cache = new SrsGopCache();
     hub = new SrsOriginHub();
     meta = new SrsMetaCache();
+    format_ = new SrsRtmpFormat();
     
     is_monotonically_increase = false;
     last_packet_time = 0;
@@ -1950,7 +1945,8 @@ SrsLiveSource::~SrsLiveSource()
     // never free the consumers,
     // for all consumers are auto free.
     consumers.clear();
-    
+
+    srs_freep(format_);
     srs_freep(hub);
     srs_freep(meta);
     srs_freep(mix_queue);
@@ -1960,7 +1956,7 @@ SrsLiveSource::~SrsLiveSource()
     srs_freep(gop_cache);
     
     srs_freep(req);
-    srs_freep(bridger_);
+    srs_freep(bridge_);
 }
 
 void SrsLiveSource::dispose()
@@ -1980,10 +1976,10 @@ srs_error_t SrsLiveSource::cycle()
     return srs_success;
 }
 
-bool SrsLiveSource::expired()
+bool SrsLiveSource::stream_is_dead()
 {
     // unknown state?
-    if (die_at == 0) {
+    if (stream_die_at_ == 0) {
         return false;
     }
     
@@ -1998,10 +1994,23 @@ bool SrsLiveSource::expired()
     }
     
     srs_utime_t now = srs_get_system_time();
-    if (now > die_at + SRS_SOURCE_CLEANUP) {
+    if (now > stream_die_at_ + SRS_SOURCE_CLEANUP) {
         return true;
     }
     
+    return false;
+}
+
+bool SrsLiveSource::publisher_is_idle_for(srs_utime_t timeout)
+{
+    if (!publisher_idle_at_ || !timeout) {
+        return false;
+    }
+
+    srs_utime_t now = srs_get_system_time();
+    if (now > publisher_idle_at_ + timeout) {
+        return true;
+    }
     return false;
 }
 
@@ -2015,6 +2024,13 @@ srs_error_t SrsLiveSource::initialize(SrsRequest* r, ISrsLiveSourceHandler* h)
     handler = h;
     req = r->copy();
     atc = _srs_config->get_atc(req->vhost);
+
+    if ((err = format_->initialize()) != srs_success) {
+        return srs_error_wrap(err, "format initialize");
+    }
+
+    // Setup the SPS/PPS parsing strategy.
+    format_->try_annexb_first = _srs_config->try_annexb_first(r->vhost);
     
     if ((err = hub->initialize(this, req)) != srs_success) {
         return srs_error_wrap(err, "hub");
@@ -2036,10 +2052,10 @@ srs_error_t SrsLiveSource::initialize(SrsRequest* r, ISrsLiveSourceHandler* h)
     return err;
 }
 
-void SrsLiveSource::set_bridger(ISrsLiveSourceBridger* v)
+void SrsLiveSource::set_bridge(ISrsStreamBridge* v)
 {
-    srs_freep(bridger_);
-    bridger_ = v;
+    srs_freep(bridge_);
+    bridge_ = v;
 }
 
 srs_error_t SrsLiveSource::on_reload_vhost_play(string vhost)
@@ -2083,6 +2099,7 @@ srs_error_t SrsLiveSource::on_reload_vhost_play(string vhost)
             string url = req->get_stream_url();
             srs_trace("vhost %s gop_cache changed to %d, source url=%s", vhost.c_str(), v, url.c_str());
             gop_cache->set(v);
+            gop_cache->set_gop_cache_max_frames(_srs_config->get_gop_cache_max_frames(vhost));
         }
     }
     
@@ -2170,7 +2187,7 @@ void SrsLiveSource::update_auth(SrsRequest* r)
 
 bool SrsLiveSource::can_publish(bool is_edge)
 {
-    // TODO: FIXME: Should check the status of bridger.
+    // TODO: FIXME: Should check the status of bridge.
 
     if (is_edge) {
         return publish_edge->can_publish();
@@ -2182,6 +2199,10 @@ bool SrsLiveSource::can_publish(bool is_edge)
 srs_error_t SrsLiveSource::on_meta_data(SrsCommonMessage* msg, SrsOnMetaDataPacket* metadata)
 {
     srs_error_t err = srs_success;
+
+    if ((err = format_->on_metadata(metadata)) != srs_success) {
+        return srs_error_wrap(err, "Format parse metadata");
+    }
     
     // if allow atc_auto and bravo-atc detected, open atc for vhost.
     SrsAmf0Any* prop = NULL;
@@ -2228,30 +2249,42 @@ srs_error_t SrsLiveSource::on_meta_data(SrsCommonMessage* msg, SrsOnMetaDataPack
 srs_error_t SrsLiveSource::on_audio(SrsCommonMessage* shared_audio)
 {
     srs_error_t err = srs_success;
-    
-    // monotically increase detect.
+
+    // Detect where stream is monotonically increasing.
     if (!mix_correct && is_monotonically_increase) {
         if (last_packet_time > 0 && shared_audio->header.timestamp < last_packet_time) {
             is_monotonically_increase = false;
-            srs_warn("AUDIO: stream not monotonically increase, please open mix_correct.");
+            srs_warn("AUDIO: Timestamp %" PRId64 "=>%" PRId64 ", may need mix_correct.",
+                     last_packet_time, shared_audio->header.timestamp);
         }
     }
     last_packet_time = shared_audio->header.timestamp;
-    
+
     // convert shared_audio to msg, user should not use shared_audio again.
     // the payload is transfer to msg, and set to NULL in shared_audio.
     SrsSharedPtrMessage msg;
     if ((err = msg.create(shared_audio)) != srs_success) {
         return srs_error_wrap(err, "create message");
     }
+
+    return on_frame(&msg);
+}
+
+srs_error_t SrsLiveSource::on_frame(SrsSharedPtrMessage* msg)
+{
+    srs_error_t err = srs_success;
     
     // directly process the audio message.
     if (!mix_correct) {
-        return on_audio_imp(&msg);
+        if (msg->is_audio()) {
+            return on_audio_imp(msg);
+        } else {
+            return on_video_imp(msg);
+        }
     }
     
     // insert msg to the queue.
-    mix_queue->push(msg.copy());
+    mix_queue->push(msg->copy());
     
     // fetch someone from mix queue.
     SrsSharedPtrMessage* m = mix_queue->pop();
@@ -2273,10 +2306,21 @@ srs_error_t SrsLiveSource::on_audio(SrsCommonMessage* shared_audio)
 srs_error_t SrsLiveSource::on_audio_imp(SrsSharedPtrMessage* msg)
 {
     srs_error_t err = srs_success;
-    
-    bool is_aac_sequence_header = SrsFlvAudio::sh(msg->payload, msg->size);
-    bool is_sequence_header = is_aac_sequence_header;
-    
+
+    // TODO: FIXME: Support parsing OPUS for RTC.
+    if ((err = format_->on_audio(msg)) != srs_success) {
+        return srs_error_wrap(err, "format consume audio");
+    }
+
+    // Ignore if no format->acodec, it means the codec is not parsed, or unsupport/unknown codec
+    // such as G.711 codec
+    if (!format_->acodec) {
+        return err;
+    }
+
+    // Whether current packet is sequence header. Note that MP3 does not have one, but we use the first packet as it.
+    bool is_sequence_header = format_->is_aac_sequence_header() || format_->is_mp3_sequence_header();
+
     // whether consumer should drop for the duplicated sequence header.
     bool drop_for_reduce = false;
     if (is_sequence_header && meta->previous_ash() && _srs_config->get_reduce_sequence_header(req->vhost)) {
@@ -2291,9 +2335,9 @@ srs_error_t SrsLiveSource::on_audio_imp(SrsSharedPtrMessage* msg)
         return srs_error_wrap(err, "consume audio");
     }
 
-    // For bridger to consume the message.
-    if (bridger_ && (err = bridger_->on_audio(msg)) != srs_success) {
-        return srs_error_wrap(err, "bridger consume audio");
+    // For bridge to consume the message.
+    if (bridge_ && (err = bridge_->on_frame(msg)) != srs_success) {
+        return srs_error_wrap(err, "bridge consume audio");
     }
 
     // copy to all consumer
@@ -2306,10 +2350,8 @@ srs_error_t SrsLiveSource::on_audio_imp(SrsSharedPtrMessage* msg)
         }
     }
     
-    // cache the sequence header of aac, or first packet of mp3.
-    // for example, the mp3 is used for hls to write the "right" audio codec.
-    // TODO: FIXME: to refine the stream info system.
-    if (is_aac_sequence_header || !meta->ash()) {
+    // Refresh the sequence header in metadata.
+    if (is_sequence_header || !meta->ash()) {
         if ((err = meta->update_ash(msg)) != srs_success) {
             return srs_error_wrap(err, "meta consume audio");
         }
@@ -2341,16 +2383,17 @@ srs_error_t SrsLiveSource::on_audio_imp(SrsSharedPtrMessage* msg)
 srs_error_t SrsLiveSource::on_video(SrsCommonMessage* shared_video)
 {
     srs_error_t err = srs_success;
-    
-    // monotically increase detect.
+
+    // Detect where stream is monotonically increasing.
     if (!mix_correct && is_monotonically_increase) {
         if (last_packet_time > 0 && shared_video->header.timestamp < last_packet_time) {
             is_monotonically_increase = false;
-            srs_warn("VIDEO: stream not monotonically increase, please open mix_correct.");
+            srs_warn("VIDEO: Timestamp %" PRId64 "=>%" PRId64 ", may need mix_correct.",
+                     last_packet_time, shared_video->header.timestamp);
         }
     }
     last_packet_time = shared_video->header.timestamp;
-    
+
     // drop any unknown header video.
     // @see https://github.com/ossrs/srs/issues/421
     if (!SrsFlvVideo::acceptable(shared_video->payload, shared_video->size)) {
@@ -2358,48 +2401,42 @@ srs_error_t SrsLiveSource::on_video(SrsCommonMessage* shared_video)
         if (shared_video->size > 0) {
             b0 = shared_video->payload[0];
         }
-        
+
         srs_warn("drop unknown header video, size=%d, bytes[0]=%#x", shared_video->size, b0);
         return err;
     }
-    
+
     // convert shared_video to msg, user should not use shared_video again.
     // the payload is transfer to msg, and set to NULL in shared_video.
     SrsSharedPtrMessage msg;
     if ((err = msg.create(shared_video)) != srs_success) {
         return srs_error_wrap(err, "create message");
     }
-    
-    // directly process the video message.
-    if (!mix_correct) {
-        return on_video_imp(&msg);
-    }
-    
-    // insert msg to the queue.
-    mix_queue->push(msg.copy());
-    
-    // fetch someone from mix queue.
-    SrsSharedPtrMessage* m = mix_queue->pop();
-    if (!m) {
-        return err;
-    }
-    
-    // consume the monotonically increase message.
-    if (m->is_audio()) {
-        err = on_audio_imp(m);
-    } else {
-        err = on_video_imp(m);
-    }
-    srs_freep(m);
-    
-    return err;
+
+    return on_frame(&msg);
 }
 
 srs_error_t SrsLiveSource::on_video_imp(SrsSharedPtrMessage* msg)
 {
     srs_error_t err = srs_success;
-    
+
     bool is_sequence_header = SrsFlvVideo::sh(msg->payload, msg->size);
+
+    // user can disable the sps parse to workaround when parse sps failed.
+    // @see https://github.com/ossrs/srs/issues/474
+    if (is_sequence_header) {
+        format_->avc_parse_sps = _srs_config->get_parse_sps(req->vhost);
+    }
+
+    if ((err = format_->on_video(msg)) != srs_success) {
+        return srs_error_wrap(err, "format consume video");
+    }
+
+    // Ignore if no format->vcodec, it means the codec is not parsed, or unsupport/unknown codec
+    // such as H.263 codec
+    if (!format_->vcodec) {
+        return err;
+    }
     
     // whether consumer should drop for the duplicated sequence header.
     bool drop_for_reduce = false;
@@ -2421,9 +2458,9 @@ srs_error_t SrsLiveSource::on_video_imp(SrsSharedPtrMessage* msg)
         return srs_error_wrap(err, "hub consume video");
     }
 
-    // For bridger to consume the message.
-    if (bridger_ && (err = bridger_->on_video(msg)) != srs_success) {
-        return srs_error_wrap(err, "bridger consume video");
+    // For bridge to consume the message.
+    if (bridge_ && (err = bridge_->on_frame(msg)) != srs_success) {
+        return srs_error_wrap(err, "bridge consume video");
     }
 
     // copy to all consumer
@@ -2586,12 +2623,17 @@ srs_error_t SrsLiveSource::on_publish()
         return srs_error_wrap(err, "handle publish");
     }
 
-    if (bridger_ && (err = bridger_->on_publish()) != srs_success) {
-        return srs_error_wrap(err, "bridger publish");
+    if (bridge_ && (err = bridge_->on_publish()) != srs_success) {
+        return srs_error_wrap(err, "bridge publish");
     }
 
     SrsStatistic* stat = SrsStatistic::instance();
     stat->on_stream_publish(req, _source_id.c_str());
+
+    // When no players, the publisher is idle now.
+    if (consumers.empty()) {
+        publisher_idle_at_ = srs_get_system_time();
+    }
     
     return err;
 }
@@ -2631,14 +2673,14 @@ void SrsLiveSource::on_unpublish()
 
     handler->on_unpublish(this, req);
 
-    if (bridger_) {
-        bridger_->on_unpublish();
-        srs_freep(bridger_);
+    if (bridge_) {
+        bridge_->on_unpublish();
+        srs_freep(bridge_);
     }
-    
+
     // no consumer, stream is die.
     if (consumers.empty()) {
-        die_at = srs_get_system_time();
+        stream_die_at_ = srs_get_system_time();
     }
 }
 
@@ -2648,7 +2690,11 @@ srs_error_t SrsLiveSource::create_consumer(SrsLiveConsumer*& consumer)
     
     consumer = new SrsLiveConsumer(this);
     consumers.push_back(consumer);
-    
+
+    // There should be one consumer, so reset the timeout.
+    stream_die_at_ = 0;
+    publisher_idle_at_ = 0;
+
     // for edge, when play edge stream, check the state
     if (_srs_config->get_vhost_is_edge(req->vhost)) {
         // notice edge to start for the first client.
@@ -2708,18 +2754,31 @@ void SrsLiveSource::on_consumer_destroy(SrsLiveConsumer* consumer)
     std::vector<SrsLiveConsumer*>::iterator it;
     it = std::find(consumers.begin(), consumers.end(), consumer);
     if (it != consumers.end()) {
-        consumers.erase(it);
+        it = consumers.erase(it);
     }
-    
+
     if (consumers.empty()) {
         play_edge->on_all_client_stop();
-        die_at = srs_get_system_time();
+
+        // For edge server, the stream die when the last player quit, because the edge stream is created by player
+        // activities, so it should die when all players quit.
+        if (_srs_config->get_vhost_is_edge(req->vhost)) {
+            stream_die_at_ = srs_get_system_time();
+        }
+
+        // When no players, the publisher is idle now.
+        publisher_idle_at_ = srs_get_system_time();
     }
 }
 
 void SrsLiveSource::set_cache(bool enabled)
 {
     gop_cache->set(enabled);
+}
+
+void SrsLiveSource::set_gop_cache_max_frames(int v)
+{
+    gop_cache->set_gop_cache_max_frames(v);
 }
 
 SrsRtmpJitterAlgorithm SrsLiveSource::jitter()

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2021 The SRS Authors
+// Copyright (c) 2013-2023 The SRS Authors
 //
 // SPDX-License-Identifier: MIT or MulanPSL-2.0
 //
@@ -19,10 +19,10 @@ using namespace std;
 #include <srs_kernel_log.hpp>
 #include <srs_app_config.hpp>
 #include <srs_app_pithy_print.hpp>
-#include <srs_rtmp_stack.hpp>
+#include <srs_protocol_rtmp_stack.hpp>
 #include <srs_protocol_utility.hpp>
 #include <srs_protocol_kbps.hpp>
-#include <srs_rtmp_msg_array.hpp>
+#include <srs_protocol_rtmp_msg_array.hpp>
 #include <srs_app_utility.hpp>
 #include <srs_protocol_amf0.hpp>
 #include <srs_kernel_codec.hpp>
@@ -66,6 +66,9 @@ srs_error_t SrsForwarder::initialize(SrsRequest* r, string ep)
     
     // the ep(endpoint) to forward to
     ep_forward = ep;
+
+    // Remember the source context id.
+    source_cid_ = _srs_context->get_id();
     
     return err;
 }
@@ -164,7 +167,10 @@ srs_error_t SrsForwarder::on_video(SrsSharedPtrMessage* shared_video)
 srs_error_t SrsForwarder::cycle()
 {
     srs_error_t err = srs_success;
-    
+
+    srs_trace("Forwarder: Start forward %s of source=[%s] to %s",
+        req->get_stream_url().c_str(), source_cid_.c_str(), ep_forward.c_str());
+
     while (true) {
         // We always check status first.
         // @see https://github.com/ossrs/srs/issues/1634#issuecomment-597571561

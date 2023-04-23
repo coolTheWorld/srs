@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2021 The SRS Authors
+// Copyright (c) 2013-2023 The SRS Authors
 //
 // SPDX-License-Identifier: MIT or MulanPSL-2.0
 //
@@ -474,8 +474,7 @@ SrsRtcpRR::SrsRtcpRR(uint32_t sender_ssrc)
     header_.version = kRtcpVersion;
     header_.length = 7;
     ssrc_ = sender_ssrc;
-    // TODO: FIXME: Fix warning.
-    memset(&rb_, 0, sizeof(SrsRtcpRB));
+    memset((void*)&rb_, 0, sizeof(SrsRtcpRB));
 }
 
 SrsRtcpRR::~SrsRtcpRR()

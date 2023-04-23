@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2021 The SRS Authors
+// Copyright (c) 2013-2023 The SRS Authors
 //
 // SPDX-License-Identifier: MIT or MulanPSL-2.0
 //
@@ -339,8 +339,10 @@ srs_error_t SrsMp4Box::discovery(SrsBuffer* buf, SrsMp4Box** ppbox)
         case SrsMp4BoxTypeSTCO: box = new SrsMp4ChunkOffsetBox(); break;
         case SrsMp4BoxTypeCO64: box = new SrsMp4ChunkLargeOffsetBox(); break;
         case SrsMp4BoxTypeSTSZ: box = new SrsMp4SampleSizeBox(); break;
-        case SrsMp4BoxTypeAVC1: box = new SrsMp4VisualSampleEntry(); break;
+        case SrsMp4BoxTypeAVC1: box = new SrsMp4VisualSampleEntry(SrsMp4BoxTypeAVC1); break;
+        case SrsMp4BoxTypeHEV1: box = new SrsMp4VisualSampleEntry(SrsMp4BoxTypeHEV1); break;
         case SrsMp4BoxTypeAVCC: box = new SrsMp4AvccBox(); break;
+        case SrsMp4BoxTypeHVCC: box = new SrsMp4HvcCBox(); break;
         case SrsMp4BoxTypeMP4A: box = new SrsMp4AudioSampleEntry(); break;
         case SrsMp4BoxTypeESDS: box = new SrsMp4EsdsBox(); break;
         case SrsMp4BoxTypeUDTA: box = new SrsMp4UserDataBox(); break;
@@ -644,6 +646,14 @@ void SrsMp4FileTypeBox::set_compatible_brands(SrsMp4BoxBrand b0, SrsMp4BoxBrand 
     compatible_brands.resize(2);
     compatible_brands[0] = b0;
     compatible_brands[1] = b1;
+}
+
+void SrsMp4FileTypeBox::set_compatible_brands(SrsMp4BoxBrand b0, SrsMp4BoxBrand b1, SrsMp4BoxBrand b2)
+{
+    compatible_brands.resize(3);
+    compatible_brands[0] = b0;
+    compatible_brands[1] = b1;
+    compatible_brands[2] = b2;
 }
 
 void SrsMp4FileTypeBox::set_compatible_brands(SrsMp4BoxBrand b0, SrsMp4BoxBrand b1, SrsMp4BoxBrand b2, SrsMp4BoxBrand b3)
@@ -3019,9 +3029,9 @@ stringstream& SrsMp4SampleEntry::dumps_detail(stringstream& ss, SrsMp4DumpContex
     return ss;
 }
 
-SrsMp4VisualSampleEntry::SrsMp4VisualSampleEntry() : width(0), height(0)
+SrsMp4VisualSampleEntry::SrsMp4VisualSampleEntry(SrsMp4BoxType boxType) : width(0), height(0)
 {
-    type = SrsMp4BoxTypeAVC1;
+    type = boxType;
     
     pre_defined0 = 0;
     reserved0 = 0;
@@ -3048,6 +3058,18 @@ SrsMp4AvccBox* SrsMp4VisualSampleEntry::avcC()
 void SrsMp4VisualSampleEntry::set_avcC(SrsMp4AvccBox* v)
 {
     remove(SrsMp4BoxTypeAVCC);
+    boxes.push_back(v);
+}
+
+SrsMp4HvcCBox* SrsMp4VisualSampleEntry::hvcC()
+{
+    SrsMp4Box* box = get(SrsMp4BoxTypeHVCC);
+    return dynamic_cast<SrsMp4HvcCBox*>(box);
+}
+
+void SrsMp4VisualSampleEntry::set_hvcC(SrsMp4HvcCBox* v)
+{
+    remove(SrsMp4BoxTypeHVCC);
     boxes.push_back(v);
 }
 
@@ -3167,6 +3189,62 @@ stringstream& SrsMp4AvccBox::dumps_detail(stringstream& ss, SrsMp4DumpContext dc
     ss << ", AVC Config: " << (int)avc_config.size() << "B" << endl;
     srs_mp4_padding(ss, dc.indent());
     srs_mp4_print_bytes(ss, (const char*)&avc_config[0], (int)avc_config.size(), dc.indent());
+    return ss;
+}
+
+SrsMp4HvcCBox::SrsMp4HvcCBox()
+{
+    type = SrsMp4BoxTypeHVCC;
+}
+
+SrsMp4HvcCBox::~SrsMp4HvcCBox()
+{
+}
+
+int SrsMp4HvcCBox::nb_header()
+{
+    return SrsMp4Box::nb_header() + (int)hevc_config.size();
+}
+
+srs_error_t SrsMp4HvcCBox::encode_header(SrsBuffer* buf)
+{
+    srs_error_t err = srs_success;
+
+    if ((err = SrsMp4Box::encode_header(buf)) != srs_success) {
+        return srs_error_wrap(err, "encode header");
+    }
+
+    if (!hevc_config.empty()) {
+        buf->write_bytes(&hevc_config[0], (int)hevc_config.size());
+    }
+
+    return err;
+}
+
+srs_error_t SrsMp4HvcCBox::decode_header(SrsBuffer* buf)
+{
+    srs_error_t err = srs_success;
+
+    if ((err = SrsMp4Box::decode_header(buf)) != srs_success) {
+        return srs_error_wrap(err, "decode header");
+    }
+
+    int nb_config = left_space(buf);
+    if (nb_config) {
+        hevc_config.resize(nb_config);
+        buf->read_bytes(&hevc_config[0], nb_config);
+    }
+
+    return err;
+}
+
+stringstream& SrsMp4HvcCBox::dumps_detail(stringstream& ss, SrsMp4DumpContext dc)
+{
+    SrsMp4Box::dumps_detail(ss, dc);
+
+    ss << ", HEVC Config: " << (int)hevc_config.size() << "B" << endl;
+    srs_mp4_padding(ss, dc.indent());
+    srs_mp4_print_bytes(ss, (const char*)&hevc_config[0], (int)hevc_config.size(), dc.indent());
     return ss;
 }
 
@@ -4912,7 +4990,7 @@ srs_error_t SrsMp4SampleManager::write(SrsMp4MovieBox* moov)
     return err;
 }
 
-srs_error_t SrsMp4SampleManager::write(SrsMp4MovieFragmentBox* moof, uint64_t& dts)
+srs_error_t SrsMp4SampleManager::write(SrsMp4MovieFragmentBox* moof, uint64_t dts)
 {
     srs_error_t err = srs_success;
     
@@ -4936,11 +5014,12 @@ srs_error_t SrsMp4SampleManager::write(SrsMp4MovieFragmentBox* moof, uint64_t& d
             entry->sample_flags = 0x01000000;
         }
         
-        entry->sample_duration = (uint32_t)srs_min(100, sample->dts - dts);
-        if (entry->sample_duration == 0) {
-            entry->sample_duration = 40;
+        vector<SrsMp4Sample*>::iterator iter = (it + 1);
+        if (iter == samples.end()) {
+            entry->sample_duration = dts - sample->dts;
+        } else {
+            entry->sample_duration = (*iter)->dts - sample->dts;
         }
-        dts = sample->dts;
         
         entry->sample_size = sample->nb_data;
         entry->sample_composition_time_offset = (int64_t)(sample->pts - sample->dts);
@@ -5237,6 +5316,8 @@ srs_error_t SrsMp4BoxReader::read(SrsSimpleStream* stream, SrsMp4Box** ppbox)
     srs_error_t err = srs_success;
     
     SrsMp4Box* box = NULL;
+    SrsAutoFree(SrsMp4Box, box);
+
     while (true) {
         // For the first time to read the box, maybe it's a basic box which is only 4bytes header.
         // When we disconvery the real box, we know the size of the whole box, then read again and decode it.
@@ -5277,10 +5358,9 @@ srs_error_t SrsMp4BoxReader::read(SrsSimpleStream* stream, SrsMp4Box** ppbox)
             continue;
         }
         
-        if (err != srs_success) {
-            srs_freep(box);
-        } else {
+        if (err == srs_success) {
             *ppbox = box;
+            box = NULL;
         }
         
         break;
@@ -5352,6 +5432,7 @@ srs_error_t SrsMp4Decoder::initialize(ISrsReadSeeker* rs)
     
     while (true) {
         SrsMp4Box* box = NULL;
+        SrsAutoFree(SrsMp4Box, box);
         
         if ((err = load_next_box(&box, 0)) != srs_success) {
             return srs_error_wrap(err, "load box");
@@ -5375,8 +5456,6 @@ srs_error_t SrsMp4Decoder::initialize(ISrsReadSeeker* rs)
             }
             break;
         }
-        
-        srs_freep(box);
     }
     
     if (brand == SrsMp4BoxBrandForbidden) {
@@ -5508,14 +5587,8 @@ srs_error_t SrsMp4Decoder::parse_moov(SrsMp4MovieBox* moov)
     SrsMp4AudioSampleEntry* mp4a = soun? soun->mp4a():NULL;
     if (mp4a) {
         uint32_t sr = mp4a->samplerate>>16;
-        if (sr >= 44100) {
-            sample_rate = SrsAudioSampleRate44100;
-        } else if (sr >= 22050) {
-            sample_rate = SrsAudioSampleRate22050;
-        } else if (sr >= 11025) {
-            sample_rate = SrsAudioSampleRate11025;
-        } else {
-            sample_rate = SrsAudioSampleRate5512;
+        if ((sample_rate = srs_audio_sample_rate_from_number(sr)) == SrsAudioSampleRateForbidden) {
+            sample_rate = srs_audio_sample_rate_guess_number(sr);
         }
         
         if (mp4a->samplesize == 16) {
@@ -5580,16 +5653,17 @@ srs_error_t SrsMp4Decoder::load_next_box(SrsMp4Box** ppbox, uint32_t required_bo
     
     while (true) {
         SrsMp4Box* box = NULL;
+        SrsAutoFree(SrsMp4Box, box);
+
         if ((err = do_load_next_box(&box, required_box_type)) != srs_success) {
-            srs_freep(box);
             return srs_error_wrap(err, "load box");
         }
         
         if (!required_box_type || (uint32_t)box->type == required_box_type) {
             *ppbox = box;
+            box = NULL;
             break;
         }
-        srs_freep(box);
     }
     
     return err;
@@ -5672,7 +5746,7 @@ srs_error_t SrsMp4Encoder::initialize(ISrsWriteSeeker* ws)
         
         ftyp->major_brand = SrsMp4BoxBrandISOM;
         ftyp->minor_version = 512;
-        ftyp->set_compatible_brands(SrsMp4BoxBrandISOM, SrsMp4BoxBrandISO2, SrsMp4BoxBrandAVC1, SrsMp4BoxBrandMP41);
+        ftyp->set_compatible_brands(SrsMp4BoxBrandISOM, SrsMp4BoxBrandISO2, SrsMp4BoxBrandMP41);
         
         int nb_data = ftyp->nb_bytes();
         std::vector<char> data(nb_data);
@@ -5810,7 +5884,7 @@ srs_error_t SrsMp4Encoder::flush()
         mvhd->duration_in_tbn = srs_max(vduration, aduration);
         mvhd->next_track_ID = 1; // Starts from 1, increase when use it.
         
-        if (nb_videos || !pavcc.empty()) {
+        if (nb_videos || !pavcc.empty() || !phvcc.empty()) {
             SrsMp4TrackBox* trak = new SrsMp4TrackBox();
             moov->add_trak(trak);
 
@@ -5872,18 +5946,32 @@ srs_error_t SrsMp4Encoder::flush()
             
             SrsMp4SampleDescriptionBox* stsd = new SrsMp4SampleDescriptionBox();
             stbl->set_stsd(stsd);
-            
-            SrsMp4VisualSampleEntry* avc1 = new SrsMp4VisualSampleEntry();
-            stsd->append(avc1);
-            
-            avc1->width = width;
-            avc1->height = height;
-            avc1->data_reference_index = 1;
-            
-            SrsMp4AvccBox* avcC = new SrsMp4AvccBox();
-            avc1->set_avcC(avcC);
-            
-            avcC->avc_config = pavcc;
+
+            if (vcodec == SrsVideoCodecIdAVC) {
+                SrsMp4VisualSampleEntry* avc1 = new SrsMp4VisualSampleEntry(SrsMp4BoxTypeAVC1);
+                stsd->append(avc1);
+
+                avc1->width = width;
+                avc1->height = height;
+                avc1->data_reference_index = 1;
+
+                SrsMp4AvccBox* avcC = new SrsMp4AvccBox();
+                avc1->set_avcC(avcC);
+
+                avcC->avc_config = pavcc;
+            } else {
+                SrsMp4VisualSampleEntry* hev1 = new SrsMp4VisualSampleEntry(SrsMp4BoxTypeHEV1);
+                stsd->append(hev1);
+
+                hev1->width = width;
+                hev1->height = height;
+                hev1->data_reference_index = 1;
+
+                SrsMp4HvcCBox* hvcC = new SrsMp4HvcCBox();
+                hev1->set_hvcC(hvcC);
+
+                hvcC->hevc_config = phvcc;
+            }
         }
         
         if (nb_audios || !pasc.empty()) {
@@ -5938,7 +6026,7 @@ srs_error_t SrsMp4Encoder::flush()
             
             SrsMp4AudioSampleEntry* mp4a = new SrsMp4AudioSampleEntry();
             mp4a->data_reference_index = 1;
-            mp4a->samplerate = uint32_t(srs_flv_srates[sample_rate]) << 16;
+            mp4a->samplerate = srs_audio_sample_rate2number(sample_rate);
             if (sound_bits == SrsAudioSampleBits16bit) {
                 mp4a->samplesize = 16;
             } else {
@@ -6040,13 +6128,24 @@ srs_error_t SrsMp4Encoder::flush()
 srs_error_t SrsMp4Encoder::copy_sequence_header(SrsFormat* format, bool vsh, uint8_t* sample, uint32_t nb_sample)
 {
     srs_error_t err = srs_success;
-    
-    if (vsh && !pavcc.empty()) {
-        if (nb_sample == (uint32_t)pavcc.size() && srs_bytes_equals(sample, &pavcc[0], (int)pavcc.size())) {
-            return err;
+
+    if (vsh) {
+        // AVC
+        if (format->vcodec->id == SrsVideoCodecIdAVC && !pavcc.empty()) {
+            if (nb_sample == (uint32_t)pavcc.size() && srs_bytes_equals(sample, &pavcc[0], (int)pavcc.size())) {
+                return err;
+            }
+
+            return srs_error_new(ERROR_MP4_AVCC_CHANGE, "doesn't support avcc change");
         }
-        
-        return srs_error_new(ERROR_MP4_AVCC_CHANGE, "doesn't support avcc change");
+        // HEVC
+        if (format->vcodec->id == SrsVideoCodecIdHEVC && !phvcc.empty()) {
+            if (nb_sample == (uint32_t)phvcc.size() && srs_bytes_equals(sample, &phvcc[0], (int)phvcc.size())) {
+                return err;
+            }
+
+            return srs_error_new(ERROR_MP4_HVCC_CHANGE, "doesn't support hvcC change");
+        }
     }
     
     if (!vsh && !pasc.empty()) {
@@ -6058,7 +6157,11 @@ srs_error_t SrsMp4Encoder::copy_sequence_header(SrsFormat* format, bool vsh, uin
     }
     
     if (vsh) {
-        pavcc = std::vector<char>(sample, sample + nb_sample);
+        if (format->vcodec->id == SrsVideoCodecIdHEVC) {
+            phvcc = std::vector<char>(sample, sample + nb_sample);
+        } else {
+            pavcc = std::vector<char>(sample, sample + nb_sample);
+        }
         if (format && format->vcodec) {
             width = format->vcodec->width;
             height = format->vcodec->height;
@@ -6101,7 +6204,7 @@ SrsMp4ObjectType SrsMp4Encoder::get_audio_object_type()
     case SrsAudioCodecIdAAC:
         return SrsMp4ObjectTypeAac;
     case SrsAudioCodecIdMP3:
-        return (srs_flv_srates[sample_rate] > 24000) ? SrsMp4ObjectTypeMp1a : SrsMp4ObjectTypeMp3;  // 11172 - 3
+        return (srs_audio_sample_rate2number(sample_rate) > 24000) ? SrsMp4ObjectTypeMp1a : SrsMp4ObjectTypeMp3;  // 11172 - 3
     default:
         return SrsMp4ObjectTypeForbidden;
     }
@@ -6202,18 +6305,32 @@ srs_error_t SrsMp4M2tsInitEncoder::write(SrsFormat* format, bool video, int tid)
             
             SrsMp4SampleDescriptionBox* stsd = new SrsMp4SampleDescriptionBox();
             stbl->set_stsd(stsd);
-            
-            SrsMp4VisualSampleEntry* avc1 = new SrsMp4VisualSampleEntry();
-            stsd->append(avc1);
-            
-            avc1->width = format->vcodec->width;
-            avc1->height = format->vcodec->height;
-            avc1->data_reference_index = 1;
-            
-            SrsMp4AvccBox* avcC = new SrsMp4AvccBox();
-            avc1->set_avcC(avcC);
-            
-            avcC->avc_config = format->vcodec->avc_extra_data;
+
+            if (format->vcodec->id == SrsVideoCodecIdAVC) {
+                SrsMp4VisualSampleEntry* avc1 = new SrsMp4VisualSampleEntry(SrsMp4BoxTypeAVC1);
+                stsd->append(avc1);
+
+                avc1->width = format->vcodec->width;
+                avc1->height = format->vcodec->height;
+                avc1->data_reference_index = 1;
+
+                SrsMp4AvccBox* avcC = new SrsMp4AvccBox();
+                avc1->set_avcC(avcC);
+
+                avcC->avc_config = format->vcodec->avc_extra_data;
+            } else {
+                SrsMp4VisualSampleEntry* hev1 = new SrsMp4VisualSampleEntry(SrsMp4BoxTypeHEV1);
+                stsd->append(hev1);
+
+                hev1->width = format->vcodec->width;
+                hev1->height = format->vcodec->height;
+                hev1->data_reference_index = 1;
+
+                SrsMp4HvcCBox* hvcC = new SrsMp4HvcCBox();
+                hev1->set_hvcC(hvcC);
+
+                hvcC->hevc_config = format->vcodec->avc_extra_data;
+            }
             
             SrsMp4DecodingTime2SampleBox* stts = new SrsMp4DecodingTime2SampleBox();
             stbl->set_stts(stts);
@@ -6450,8 +6567,7 @@ srs_error_t SrsMp4M2tsSegmentEncoder::flush(uint64_t& dts)
         uint64_t duration = 0;
         if (samples && !samples->samples.empty()) {
             SrsMp4Sample* first = samples->samples[0];
-            SrsMp4Sample* last = samples->samples[samples->samples.size() - 1];
-            duration = srs_max(0, last->dts - first->dts);
+            duration = srs_max(0, dts - first->dts);
         }
 
         SrsMp4SegmentIndexEntry entry;

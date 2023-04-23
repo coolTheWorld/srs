@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2021 The SRS Authors
+// Copyright (c) 2013-2023 The SRS Authors
 //
 // SPDX-License-Identifier: MIT or MulanPSL-2.0
 //
@@ -12,7 +12,7 @@
 using namespace std;
 
 #include <srs_app_config.hpp>
-#include <srs_rtmp_stack.hpp>
+#include <srs_protocol_rtmp_stack.hpp>
 #include <srs_core_autofree.hpp>
 #include <srs_kernel_utility.hpp>
 #include <srs_app_http_hooks.hpp>
@@ -25,6 +25,8 @@ using namespace std;
 #include <srs_app_utility.hpp>
 #include <srs_kernel_mp4.hpp>
 #include <srs_app_fragment.hpp>
+
+#define SRS_FWRITE_CACHE_SIZE 65536
 
 SrsDvrSegmenter::SrsDvrSegmenter()
 {
@@ -95,6 +97,11 @@ srs_error_t SrsDvrSegmenter::open()
         return srs_error_wrap(err, "open file %s", path.c_str());
     }
     
+    // Set libc file write cache buffer size
+    if ((err = fs->set_iobuf_size(SRS_FWRITE_CACHE_SIZE)) != srs_success) {
+        return srs_error_wrap(err, "set iobuf size for file %s", path.c_str());
+    }
+
     // initialize the encoder.
     if ((err = open_encoder()) != srs_success) {
         return srs_error_wrap(err, "open encoder");
@@ -462,7 +469,7 @@ srs_error_t SrsDvrMp4Segmenter::encode_audio(SrsSharedPtrMessage* audio, SrsForm
     SrsAudioChannels channels = format->acodec->sound_type;
     
     SrsAudioAacFrameTrait ct = format->audio->aac_packet_type;
-    if (ct == SrsAudioAacFrameTraitSequenceHeader || ct == SrsAudioMp3FrameTrait) {
+    if (ct == SrsAudioAacFrameTraitSequenceHeader || ct == SrsAudioMp3FrameTraitSequenceHeader) {
         enc->acodec = sound_format;
         enc->sample_rate = sound_rate;
         enc->sound_bits = sound_size;
@@ -565,8 +572,6 @@ string SrsDvrAsyncCallOnDvr::to_string()
     ss << "vhost=" << req->vhost << ", file=" << path;
     return ss.str();
 }
-
-extern SrsAsyncCallWorker* _srs_dvr_async;
 
 SrsDvrPlan::SrsDvrPlan()
 {

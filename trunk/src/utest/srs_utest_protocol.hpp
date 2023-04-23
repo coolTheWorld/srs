@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2021 The SRS Authors
+// Copyright (c) 2013-2023 The SRS Authors
 //
 // SPDX-License-Identifier: MIT or MulanPSL-2.0
 //
@@ -15,8 +15,8 @@
 #include <string>
 #include <srs_protocol_utility.hpp>
 
-#include <srs_rtmp_stack.hpp>
-#include <srs_rtmp_handshake.hpp>
+#include <srs_protocol_rtmp_stack.hpp>
+#include <srs_protocol_rtmp_handshake.hpp>
 #include <srs_protocol_stream.hpp>
 #include <srs_protocol_kbps.hpp>
 

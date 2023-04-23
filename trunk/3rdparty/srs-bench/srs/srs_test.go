@@ -23,8 +23,10 @@ package srs
 import (
 	"github.com/ossrs/go-oryx-lib/logger"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestMain(m *testing.M) {
@@ -40,6 +42,9 @@ func TestMain(m *testing.M) {
 			logger.Switch(olw)
 		}()
 	}
+
+	// Init rand seed.
+	rand.Seed(time.Now().UnixNano())
 
 	os.Exit(m.Run())
 }

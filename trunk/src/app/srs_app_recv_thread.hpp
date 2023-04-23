@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2021 The SRS Authors
+// Copyright (c) 2013-2023 The SRS Authors
 //
 // SPDX-License-Identifier: MIT or MulanPSL-2.0
 //
@@ -24,7 +24,7 @@ class SrsLiveSource;
 class SrsRequest;
 class SrsLiveConsumer;
 class SrsHttpConn;
-class SrsResponseOnlyHttpConn;
+class SrsHttpxConn;
 
 // The message consumer which consume a message.
 class ISrsMessageConsumer
@@ -196,10 +196,10 @@ private:
 class SrsHttpRecvThread : public ISrsCoroutineHandler
 {
 private:
-    SrsResponseOnlyHttpConn* conn;
+    SrsHttpxConn* conn;
     SrsCoroutine* trd;
 public:
-    SrsHttpRecvThread(SrsResponseOnlyHttpConn* c);
+    SrsHttpRecvThread(SrsHttpxConn* c);
     virtual ~SrsHttpRecvThread();
 public:
     virtual srs_error_t start();

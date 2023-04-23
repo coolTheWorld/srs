@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2021 The SRS Authors
+// Copyright (c) 2013-2023 The SRS Authors
 //
 // SPDX-License-Identifier: MIT or MulanPSL-2.0
 //
@@ -68,6 +68,9 @@ class SrsFlvStreamEncoder : public ISrsBufferEncoder
 private:
     SrsFlvTransmuxer* enc;
     bool header_written;
+    bool has_audio_;
+    bool has_video_;
+    bool guess_has_av_;
 public:
     SrsFlvStreamEncoder();
     virtual ~SrsFlvStreamEncoder();
@@ -77,13 +80,18 @@ public:
     virtual srs_error_t write_video(int64_t timestamp, char* data, int size);
     virtual srs_error_t write_metadata(int64_t timestamp, char* data, int size);
 public:
+    void set_drop_if_not_match(bool v);
+    void set_has_audio(bool v);
+    void set_has_video(bool v);
+    void set_guess_has_av(bool v);
+public:
     virtual bool has_cache();
     virtual srs_error_t dump_cache(SrsLiveConsumer* consumer, SrsRtmpJitterAlgorithm jitter);
 public:
     // Write the tags in a time.
     virtual srs_error_t write_tags(SrsSharedPtrMessage** msgs, int count);
 private:
-    virtual srs_error_t write_header(bool has_video = true, bool has_audio = true);
+    virtual srs_error_t write_header(bool has_video, bool has_audio);
 };
 
 // Transmux RTMP to HTTP TS Streaming.
@@ -102,6 +110,9 @@ public:
 public:
     virtual bool has_cache();
     virtual srs_error_t dump_cache(SrsLiveConsumer* consumer, SrsRtmpJitterAlgorithm jitter);
+public:
+    void set_has_audio(bool v);
+    void set_has_video(bool v);
 };
 
 // Transmux RTMP with AAC stream to HTTP AAC Streaming.
@@ -234,10 +245,6 @@ public:
     // HTTP flv/ts/mp3/aac stream
     virtual srs_error_t http_mount(SrsLiveSource* s, SrsRequest* r);
     virtual void http_unmount(SrsLiveSource* s, SrsRequest* r);
-// Interface ISrsReloadHandler.
-public:
-    virtual srs_error_t on_reload_vhost_added(std::string vhost);
-    virtual srs_error_t on_reload_vhost_http_remux_updated(std::string vhost);
 // Interface ISrsHttpMatchHijacker
 public:
     virtual srs_error_t hijack(ISrsHttpMessage* request, ISrsHttpHandler** ph);

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2021 The SRS Authors
+// Copyright (c) 2013-2023 The SRS Authors
 //
 // SPDX-License-Identifier: MIT or MulanPSL-2.0
 //
@@ -16,8 +16,9 @@
 #include <srs_app_st.hpp>
 #include <srs_app_reload.hpp>
 #include <srs_core_performance.hpp>
-#include <srs_service_st.hpp>
+#include <srs_protocol_st.hpp>
 #include <srs_app_hourglass.hpp>
+#include <srs_app_stream_bridge.hpp>
 
 class SrsFormat;
 class SrsRtmpFormat;
@@ -228,6 +229,10 @@ private:
     // The client will wait for the next keyframe for h264,
     // and will be black-screen.
     bool enable_gop_cache;
+    // to limit the max gop cache frames
+    // without this limit, if ingest stream always has no IDR frame
+    // it will cause srs run out of memory
+    int gop_cache_max_frames_;
     // The video frame count, avoid cache for pure audio stream.
     int cached_video_count;
     // when user disabled video when publishing, and gop cache enalbed,
@@ -251,6 +256,7 @@ public:
     virtual void dispose();
     // To enable or disable the gop cache.
     virtual void set(bool v);
+    virtual void set_gop_cache_max_frames(int v);
     virtual bool enabled();
     // only for h264 codec
     // 1. cache the gop when got h264 video packet.
@@ -313,8 +319,6 @@ private:
     SrsRequest* req_;
     bool is_active;
 private:
-    // The format, codec information.
-    SrsRtmpFormat* format;
     // hls handler.
     SrsHls* hls;
     // The DASH encoder.
@@ -468,19 +472,6 @@ public:
 // Global singleton instance.
 extern SrsLiveSourceManager* _srs_sources;
 
-// For RTMP2RTC, bridge SrsLiveSource to SrsRtcSource
-class ISrsLiveSourceBridger
-{
-public:
-    ISrsLiveSourceBridger();
-    virtual ~ISrsLiveSourceBridger();
-public:
-    virtual srs_error_t on_publish() = 0;
-    virtual srs_error_t on_audio(SrsSharedPtrMessage* audio) = 0;
-    virtual srs_error_t on_video(SrsSharedPtrMessage* video) = 0;
-    virtual void on_unpublish() = 0;
-};
-
 // The live streaming source.
 class SrsLiveSource : public ISrsReloadHandler
 {
@@ -514,8 +505,8 @@ private:
     int64_t last_packet_time;
     // The event handler.
     ISrsLiveSourceHandler* handler;
-    // The source bridger for other source.
-    ISrsLiveSourceBridger* bridger_;
+    // The source bridge for other source.
+    ISrsStreamBridge* bridge_;
     // The edge control service
     SrsPlayEdge* play_edge;
     SrsPublishEdge* publish_edge;
@@ -525,25 +516,30 @@ private:
     SrsOriginHub* hub;
     // The metadata cache.
     SrsMetaCache* meta;
+    // The format, codec information.
+    SrsRtmpFormat* format_;
 private:
     // Whether source is avaiable for publishing.
     bool _can_publish;
-    // The last die time, when all consumers quit and no publisher,
-    // We will remove the source when source die.
-    srs_utime_t die_at;
+    // The last die time, while die means neither publishers nor players.
+    srs_utime_t stream_die_at_;
+    // The last idle time, while idle means no players.
+    srs_utime_t publisher_idle_at_;
 public:
     SrsLiveSource();
     virtual ~SrsLiveSource();
 public:
     virtual void dispose();
     virtual srs_error_t cycle();
-    // Remove source when expired.
-    virtual bool expired();
+    // Whether stream is dead, which is no publisher or player.
+    virtual bool stream_is_dead();
+    // Whether publisher is idle for a period of timeout.
+    bool publisher_is_idle_for(srs_utime_t timeout);
 public:
     // Initialize the hls with handlers.
     virtual srs_error_t initialize(SrsRequest* r, ISrsLiveSourceHandler* h);
     // Bridge to other source, forward packets to it.
-    void set_bridger(ISrsLiveSourceBridger* v);
+    void set_bridge(ISrsStreamBridge* v);
 // Interface ISrsReloadHandler
 public:
     virtual srs_error_t on_reload_vhost_play(std::string vhost);
@@ -564,6 +560,7 @@ public:
 public:
     // TODO: FIXME: Use SrsSharedPtrMessage instead.
     virtual srs_error_t on_audio(SrsCommonMessage* audio);
+    srs_error_t on_frame(SrsSharedPtrMessage* msg);
 private:
     virtual srs_error_t on_audio_imp(SrsSharedPtrMessage* audio);
 public:
@@ -589,6 +586,7 @@ public:
     virtual srs_error_t consumer_dumps(SrsLiveConsumer* consumer, bool ds = true, bool dm = true, bool dg = true);
     virtual void on_consumer_destroy(SrsLiveConsumer* consumer);
     virtual void set_cache(bool enabled);
+    virtual void set_gop_cache_max_frames(int v);
     virtual SrsRtmpJitterAlgorithm jitter();
 public:
     // For edge, when publish edge stream, check the state

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2013-2021 The SRS Authors
+// Copyright (c) 2013-2023 The SRS Authors
 //
 // SPDX-License-Identifier: MIT or MulanPSL-2.0
 //
@@ -489,7 +489,7 @@ void SrsUnSortedHashtable::set(string key, SrsAmf0Any* value)
         
         if (key == name) {
             srs_freep(any);
-            properties.erase(it);
+            it = properties.erase(it);
             break;
         }
     }
